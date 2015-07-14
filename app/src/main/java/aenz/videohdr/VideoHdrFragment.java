@@ -164,7 +164,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
      * @param viewWidth  The width of `mTextureView`
      * @param viewHeight The height of `mTextureView`
      */
-    private void configureTransform(int viewWidth, int viewHeight) {
+    public void configureTransform(int viewWidth, int viewHeight) {
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
             return;
