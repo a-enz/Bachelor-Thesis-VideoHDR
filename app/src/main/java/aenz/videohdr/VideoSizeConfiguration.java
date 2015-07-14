@@ -23,7 +23,7 @@ public final class VideoSizeConfiguration {
 
     private static final String TAG = "VideoSizeConfiguration";
 
-    private static final float ASPECT_RATIO = 4.f / 3.f;
+    private static final float ASPECT_RATIO = 3.f / 4.f;
     private static final int MAX_WIDTH = 1080;
 
     private static final Class<SurfaceTexture> PREVIEW_CLASS = SurfaceTexture.class;
@@ -40,7 +40,8 @@ public final class VideoSizeConfiguration {
      */
 
     public static Size choosePreviewSize(CameraCharacteristics characteristics,
-                                         AutoFitTextureView preview){
+                                         int width,
+                                         int height){
 
         StreamConfigurationMap map = characteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -51,7 +52,7 @@ public final class VideoSizeConfiguration {
         List<Size> bigEnough = new ArrayList<Size>();
         for (Size option : choices) {
             if (option.getHeight() == option.getWidth() * ASPECT_RATIO &&
-                    option.getWidth() >= preview.getWidth() && option.getHeight() >= preview.getHeight()) {
+                    option.getWidth() >= width && option.getHeight() >= height) {
                 bigEnough.add(option);
             }
         }

@@ -48,6 +48,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
+            mHdrCamera.configurePreview(mTextureView, width, height);
             mHdrCamera.openCamera();
         }
 
@@ -101,6 +102,16 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState){
+        /* instantiate global variables that are used for the whole lifetime of this
+        * fragment
+        */
+        super.onCreate(savedInstanceState);
+        mHdrCamera = new HdrCamera(getActivity());
+        Log.d(TAG, "camera object created");
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_main, container, false);
@@ -115,11 +126,6 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
         mRecordButton = (Button) view.findViewById(R.id.b_video);
         mRecordButton.setOnClickListener(this);
-
-        /* instantiate global variables that are used for the whole lifetime of this
-        * fragment
-        */
-        mHdrCamera = new HdrCamera(getActivity());
     }
 
     @Override
@@ -165,6 +171,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
      * @param viewHeight The height of `mTextureView`
      */
     public void configureTransform(int viewWidth, int viewHeight) {
+
+        Log.d(TAG, "executing configureTransform");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
             return;

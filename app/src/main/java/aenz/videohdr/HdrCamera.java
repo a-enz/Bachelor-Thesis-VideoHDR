@@ -174,13 +174,16 @@ public class HdrCamera {
 
     /* CAMERA OPERATION METHODS */
 
-    public void configurePreview(AutoFitTextureView textureView){
+    public void configurePreview(AutoFitTextureView textureView, int width , int height){
 
         //get possible sizes for use with SurfaceTextures
 
         Size previewSize = VideoSizeConfiguration.choosePreviewSize(
                 mCameraCharacteristics,
-                textureView);
+                width,
+                height);
+
+        Log.d(TAG, "PreviewSize chosen is: " + previewSize);
 
         int orientation = mAssociatedActivity.getResources().getConfiguration().orientation;
 
