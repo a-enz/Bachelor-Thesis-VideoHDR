@@ -6,6 +6,7 @@ import android.view.TextureView;
 import android.view.View;
 
 /**
+ * More or less copy pasted from GoogleSamples 'Camera2Video' and 'Camera2Basic'
  * Created by andi on 13.07.2015.
  */
 public class AutoFitTextureView extends TextureView{

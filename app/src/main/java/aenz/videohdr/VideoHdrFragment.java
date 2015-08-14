@@ -48,8 +48,10 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
-            mHdrCamera.configurePreview(mTextureView, width, height);
+
             mHdrCamera.openCamera();
+            Log.d(TAG, "onSurfaceTextureAvailable: CAMERA open");
+            mHdrCamera.configurePreview(mTextureView, width, height);
         }
 
         @Override
@@ -133,6 +135,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         super.onResume();
         if (mTextureView.isAvailable()) {
             mHdrCamera.openCamera();
+            Log.d(TAG, "onResume: CAMERA is open");
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
@@ -141,12 +144,16 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onPause() {
         mHdrCamera.closeCamera();
+        Log.d(TAG, "onPause: CAMERA is closed");
         super.onPause();
     }
 
 
     /**
-     * Only one button is available right now, record start/stop
+     * Only one button is available right now, record start/stop. Here the recording should
+     * be started while the Camera is already capturing Frames in the background like it would for the
+     * recording. That is because we also need to provide a preview and do some exposure meetering to
+     * get hopefully good parameter settings for the actual recorded part
      * @param v
      */
     @Override

@@ -1,5 +1,12 @@
 package aenz.videohdr;
 
+/**
+ * Helper Class to easily modify Preview and Recording parameters like size (aspect ratio)
+ * depending on the camera hardware and the (end-)consumer surfaces:
+ * -MediaRecorder
+ * -SurfaceTexture
+ */
+
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -24,7 +31,7 @@ public final class VideoSizeConfiguration {
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
-    private static final int MAX_WIDTH = 1080;
+    private static final int MAX_RECORDING_WIDTH = 1080;
 
     private static final Class<SurfaceTexture> PREVIEW_CLASS = SurfaceTexture.class;
 

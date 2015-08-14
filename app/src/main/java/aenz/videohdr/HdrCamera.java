@@ -48,13 +48,19 @@ public class HdrCamera {
     private Handler mCameraHandler;
 
     /* Consumer Surfaces of this camera */
+    /* Will probably contain the MediaRecorder surface and several Renderscripts
+       (Histogram, Preview generation)
+     */
     private ArrayList<Surface> mConsumerSurfaces;
 
 
 
 
     /**
-     * Creator Method of this class
+     * Creator Method of this class. Instantiate the Camera with desired capabilites like
+     * back facing, a sufficient hardware support level, a.s.o
+     * A Thread to handle camera operation in the background is also created.
+     *
      * @param activity associated activity
      */
 
@@ -75,7 +81,6 @@ public class HdrCamera {
     /* CAMERA STATE & RESOURCES METHODS */
 
 
-
     private CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
@@ -85,12 +90,14 @@ public class HdrCamera {
         @Override
         public void onDisconnected(CameraDevice camera) {
             camera.close();
+            Log.d(TAG, "onDisconnected: CAMERA is closed");
             mCameraDevice = null;
         }
 
         @Override
         public void onError(CameraDevice camera, int error) {
             camera.close();
+            Log.d(TAG, "on Error: CAMERA is closed");
             mCameraDevice = null;
         }
     };
@@ -137,6 +144,7 @@ public class HdrCamera {
         return false;
     }
 
+    /* Open Method for the camera, needs to run on background thread since it is a long operation */
     public void openCamera(){
         mCameraHandler = new Handler(mCameraThread.getLooper());
 
@@ -174,10 +182,12 @@ public class HdrCamera {
 
     /* CAMERA OPERATION METHODS */
 
+    /* configure preview size depending on possible texture sizes provided by the camera hardware
+    * found in CameraCharacteristics
+    * */
     public void configurePreview(AutoFitTextureView textureView, int width , int height){
 
         //get possible sizes for use with SurfaceTextures
-
         Size previewSize = VideoSizeConfiguration.choosePreviewSize(
                 mCameraCharacteristics,
                 width,
@@ -202,8 +212,6 @@ public class HdrCamera {
             by some preset values.
          */
     }
-
-
 
 
     /* HELPER METHODS */
