@@ -81,7 +81,7 @@ public class HdrCamera {
     /* CAMERA STATE & RESOURCES METHODS */
 
 
-    private CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
+    private final CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
             mCameraDevice = camera;
@@ -208,9 +208,11 @@ public class HdrCamera {
     public void activate(){
 
         /*
-            TODO configure all the consumer surfaces and start the alternating requests
+            TODO create AlternatingSession (maybe already earlier) and start capture
             by some preset values.
          */
+
+        //TODO somewhere should the results from the HistogramEvaluation feed back into AlternatingSession.setAlternatingCapture
     }
 
 

@@ -18,38 +18,26 @@ public class PreviewFuser {
     private static final String TAG = "PreviewFuser";
 
 
-    private Allocation mInputHdrAllocation;
-    private Allocation mInputNormalAllocation;
+    private Allocation mInputAllocation;
     private Allocation mPrevAllocation;
     private Allocation mOutputAllocation;
 
-    private Surface mOutputSurface;
     private HandlerThread mProcessingThread;
     private Handler mProcessingHandler;
-    private ScriptC_preview_fuser mHdrMergeScript;
+    private ScriptC_preview_fuser mFuseScript;
 
-    public ProcessingTask mHdrTask;
-    public ProcessingTask mNormalTask;
+    public ProcessingTask mFuseTask;
 
-    private Size mSize;
-
-    private int mMode;
-
-    //public final static int MODE_NORMAL = 0;
-    public final static int MODE_SIDE_BY_SIDE = 0;
-    public final static int MODE_HDR = 1;
 
     public PreviewFuser(RenderScript rs, Size dimensions) {
-        mSize = dimensions;
 
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
         yuvTypeBuilder.setX(dimensions.getWidth());
         yuvTypeBuilder.setY(dimensions.getHeight());
         yuvTypeBuilder.setYuvFormat(ImageFormat.YUV_420_888);
-        mInputHdrAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
+        mInputAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
                 Allocation.USAGE_IO_INPUT | Allocation.USAGE_SCRIPT);
-        mInputNormalAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
-                Allocation.USAGE_IO_INPUT | Allocation.USAGE_SCRIPT);
+
 
         Type.Builder rgbTypeBuilder = new Type.Builder(rs, Element.RGBA_8888(rs));
         rgbTypeBuilder.setX(dimensions.getWidth());
@@ -59,35 +47,25 @@ public class PreviewFuser {
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
                 Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
 
-        mProcessingThread = new HandlerThread("ViewfinderProcessor");
+        mProcessingThread = new HandlerThread("PreviewFuser");
         mProcessingThread.start();
         mProcessingHandler = new Handler(mProcessingThread.getLooper());
 
-        mHdrMergeScript = new ScriptC_preview_fuser(rs);
+        mFuseScript = new ScriptC_preview_fuser(rs);
 
-        mHdrMergeScript.set_gPrevFrame(mPrevAllocation);
+        mFuseScript.set_gPrevFrame(mPrevAllocation);
 
-        mHdrTask = new ProcessingTask(mInputHdrAllocation, dimensions.getWidth()/2, true);
-        mNormalTask = new ProcessingTask(mInputNormalAllocation, 0, false);
-
-        setRenderMode(MODE_HDR);
+        mFuseTask = new ProcessingTask(mInputAllocation);
     }
 
-    public Surface getInputHdrSurface() {
-        return mInputHdrAllocation.getSurface();
-    }
-
-    public Surface getInputNormalSurface() {
-        return mInputNormalAllocation.getSurface();
+    public Surface getInputSurface() {
+        return mInputAllocation.getSurface();
     }
 
     public void setOutputSurface(Surface output) {
         mOutputAllocation.setSurface(output);
     }
 
-    public void setRenderMode(int mode) {
-        mMode = mode;
-    }
 
     /**
      * Simple class to keep track of incoming frame count,
@@ -96,16 +74,13 @@ public class PreviewFuser {
     class ProcessingTask implements Runnable, Allocation.OnBufferAvailableListener {
         private int mPendingFrames = 0;
         private int mFrameCounter = 0;
-        private int mCutPointX;
-        private boolean mCheckMerge;
 
         private Allocation mInputAllocation;
 
-        public ProcessingTask(Allocation input, int cutPointX, boolean checkMerge) {
+        public ProcessingTask(Allocation input) {
             mInputAllocation = input;
             mInputAllocation.setOnBufferAvailableListener(this);
-            mCutPointX = cutPointX;
-            mCheckMerge = checkMerge;
+
         }
 
         @Override
@@ -134,12 +109,12 @@ public class PreviewFuser {
                 mInputAllocation.ioReceive();
             }
 
-            mHdrMergeScript.set_gFrameCounter(mFrameCounter++);
-            mHdrMergeScript.set_gCurrentFrame(mInputAllocation);
+            mFuseScript.set_gFrameCounter(mFrameCounter++);
+            mFuseScript.set_gCurrentFrame(mInputAllocation);
 
 
             // Run processing pass
-            mHdrMergeScript.forEach_fuseFrames(mPrevAllocation, mOutputAllocation);
+            mFuseScript.forEach_fuseFrames(mPrevAllocation, mOutputAllocation);
             mOutputAllocation.ioSend();
         }
     }
