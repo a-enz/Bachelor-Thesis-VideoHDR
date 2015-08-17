@@ -4,12 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
+import android.hardware.camera2.*;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -53,6 +48,9 @@ public class HdrCamera {
      */
     private ArrayList<Surface> mConsumerSurfaces;
 
+    /* Object handling the Video recording of this camera */
+    private VideoRecorder mVideoRecorder;
+
 
 
 
@@ -74,6 +72,7 @@ public class HdrCamera {
 
         mCameraThread = new HandlerThread("CameraOpsThread");
         mCameraThread.start();
+        mCameraHandler = new Handler(mCameraThread.getLooper());
     }
 
 
@@ -85,6 +84,7 @@ public class HdrCamera {
         @Override
         public void onOpened(CameraDevice camera) {
             mCameraDevice = camera;
+            //TODO create VideoRecorder
         }
 
         @Override
@@ -145,8 +145,11 @@ public class HdrCamera {
     }
 
     /* Open Method for the camera, needs to run on background thread since it is a long operation */
-    public void openCamera(){
-        mCameraHandler = new Handler(mCameraThread.getLooper());
+    public void openCamera(AutoFitTextureView textureView){
+
+        configurePreview(textureView);
+
+        mVideoRecorder = new VideoRecorder();
 
         mCameraHandler.post(new Runnable() {
             public void run() {
@@ -170,10 +173,11 @@ public class HdrCamera {
             public void run() {
                 if (mCameraDevice != null) {
                     mCameraDevice.close();
+                    mCameraDevice = null;
                 }
-                mCameraDevice = null;
-                mCameraSession = null;
-                mConsumerSurfaces = null;
+                if(mVideoRecorder != null) {
+                    //TODO release /terminate properly
+                }
             }
         });
     }
@@ -185,13 +189,13 @@ public class HdrCamera {
     /* configure preview size depending on possible texture sizes provided by the camera hardware
     * found in CameraCharacteristics
     * */
-    public void configurePreview(AutoFitTextureView textureView, int width , int height){
+    private void configurePreview(AutoFitTextureView textureView){
 
         //get possible sizes for use with SurfaceTextures
         Size previewSize = VideoSizeConfiguration.choosePreviewSize(
                 mCameraCharacteristics,
-                width,
-                height);
+                textureView.getWidth(),
+                textureView.getHeight());
 
         Log.d(TAG, "PreviewSize chosen is: " + previewSize);
 
@@ -205,7 +209,9 @@ public class HdrCamera {
         }
     }
 
-    public void activate(){
+
+    /* RECORDER OPERATION METHODS */
+    public void startRecording(){
 
         /*
             TODO create AlternatingSession (maybe already earlier) and start capture
@@ -214,6 +220,12 @@ public class HdrCamera {
 
         //TODO somewhere should the results from the HistogramEvaluation feed back into AlternatingSession.setAlternatingCapture
     }
+
+    public void stopRecording(){
+
+    }
+
+
 
 
     /* HELPER METHODS */

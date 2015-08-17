@@ -49,9 +49,10 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
 
-            mHdrCamera.openCamera();
+            mHdrCamera.openCamera(mTextureView); //TODO provide also preview surface
+            /*all other surfaces should be created from HdrCamera*/
             Log.d(TAG, "onSurfaceTextureAvailable: CAMERA open");
-            mHdrCamera.configurePreview(mTextureView, width, height);
+            //mHdrCamera.configurePreview(mTextureView, width, height); not here!
         }
 
         @Override
@@ -134,7 +135,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
     public void onResume() {
         super.onResume();
         if (mTextureView.isAvailable()) {
-            mHdrCamera.openCamera();
+            mHdrCamera.openCamera(mTextureView);
             Log.d(TAG, "onResume: CAMERA is open");
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
