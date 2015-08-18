@@ -55,7 +55,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
     private Handler mCameraHandler;
 
     //associated hardware camera device
-    private final CameraDevice mCamera;
+    private final HdrCamera mCamera;
 
 
     /**
@@ -73,16 +73,24 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
                     /* since the brightness and such should not have changed that much?*/
                     //TODO is this only called when opening camera?
                     setAlternatingCapture(INITIAL_EVEN_ISO,
-                                        INITIAL_ODD_ISO,
-                                        INITIAL_EVEN_EXPOSURE,
-                                        INITIAL_ODD_EXPOSURE);
+                            INITIAL_ODD_ISO,
+                            INITIAL_EVEN_EXPOSURE,
+                            INITIAL_ODD_EXPOSURE);
 
                 }
 
                 @Override
                 public void onConfigureFailed(CameraCaptureSession session) {
+                    /* this is called if the surfaces contain unsupported sizes (as defined by
+                     StreamconfigurationMap.getoutputSizes(SurfaceHolder.class)) or too many target surfaces
+                     are provided.
+                     */
+
                     Log.d(TAG, "onConfigureFailed");
                     //TODO probably should close the camera and end session properly
+                    mCamera.closeCamera();
+
+
                 }
             };
 
@@ -135,7 +143,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
      * @param consumers consumer surfaces of captured requests
      * @param cameraHandler background camera thread to handle the requests
      */
-    public AlternatingSession(CameraDevice device,
+    public AlternatingSession(HdrCamera device,
                               List<Surface> consumers,
                               Handler cameraHandler) {
 
@@ -155,11 +163,11 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
     private boolean createSessionAndCaptureBuilder(){
 
         try {
-            mCamera.createCaptureSession(mConsumerSurfaces, mStateCallback, mCameraHandler);
+            mCamera.getCameraDevice().createCaptureSession(mConsumerSurfaces, mStateCallback, mCameraHandler);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureSession");
             e.printStackTrace();
-            mCamera.close(); //TODO is this really necessary here? although something did go horribly wrong should it be called
+            mCamera.closeCamera(); //TODO is this really necessary here? although something did go horribly wrong should it be called
         }
 
 
@@ -167,7 +175,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
             /*TODO maybe we should separate this part below from createSessionAndCaptureBuilder and make two different methods*/
             /*not quite sure if it is a good idea to separate requests for preview only and record */
 
-                mRequestBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureRequest");
             e.printStackTrace();
@@ -176,7 +184,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
         if (mCaptureSession == null || mRequestBuilder == null)
             return false;
 
-
+        //TODO apparently this is called too late. move it
         for(Surface surface : mConsumerSurfaces){
             mRequestBuilder.addTarget(surface);
         }

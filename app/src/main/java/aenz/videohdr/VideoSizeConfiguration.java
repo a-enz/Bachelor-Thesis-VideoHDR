@@ -13,6 +13,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.util.Log;
 import android.util.Size;
+import android.view.SurfaceHolder;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,10 @@ public final class VideoSizeConfiguration {
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
         Size[] choices = map.getOutputSizes(PREVIEW_CLASS);
+        Size[] choicesSrfc = map.getOutputSizes(SurfaceHolder.class);
+        Size[] choicesMR = map.getOutputSizes(RECORDER_CLASS);
+
+
 
         // Collect the supported resolutions that are at least as big as the preview Surface
         List<Size> bigEnough = new ArrayList<Size>();

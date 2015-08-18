@@ -46,10 +46,10 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
+    private List<Surface> mConsumerSurfaces;// = Arrays.asList(null); //TODO maybe instantiate better elsewhere
 
     /* Object handling the Video recording of this camera */
-    private VideoRecorder mVideoRecorder;
+    private VideoRecorder mVideoRecorder; //TODO reactive and initialize with proper video sizes (StreamconfigurationMatp)
 
     //Renderscript object used for two scripts: preview fusion and histogram
     private RenderScript mRS;
@@ -95,7 +95,7 @@ public class HdrCamera {
             * opened again*/
 
             //TODO later on this will probably be a global object since we need to access setter method from histogram/exposure metering
-            AlternatingSession aCaptureSession = new AlternatingSession(mCameraDevice,
+            AlternatingSession aCaptureSession = new AlternatingSession(HdrCamera.this,
                     mConsumerSurfaces,
                     mCameraHandler);
 
@@ -161,17 +161,19 @@ public class HdrCamera {
     /* Open Method for the camera, needs to run on background thread since it is a long operation */
     public void openCamera(AutoFitTextureView textureView){
 
+        //TODO configure also size of output video. preview depends on it?
         //first configure the preview texture
-        configurePreview(textureView);
+        Size previewSize = configurePreview(textureView);
 
+        //TODO wrong width/height given to videoRecorder and previewsurface
         //set up the VideoRecorder for the correct size and orientation of captured frames
         int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
         int width = textureView.getWidth();
-        int height = textureView.getHeight();
-        mVideoRecorder = new VideoRecorder(rotation, width, height);
+        int height = textureView.getHeight(); //TODO sizes received through VideoSizeCOnfiguration.chooseVideoSize
+        //mVideoRecorder = new VideoRecorder(rotation, width, height);
 
         //set consumer surfaces
-        setupSurfaces(textureView);
+        setupSurfaces(textureView, previewSize);
 
         //open the camera device with defined State Callbacks and a Handler to the camera thread
         mCameraHandler.post(new Runnable() {
@@ -188,7 +190,7 @@ public class HdrCamera {
             }
         });
 
-        /* starting an alternating capture session is only done after succcessful opening the camera
+        /* starting an alternating capture session is only done after successful opening the camera
         * and is handled by the mCameraStateCallback object */
     }
 
@@ -200,10 +202,11 @@ public class HdrCamera {
                     mCameraDevice.close();
                     mCameraDevice = null;
                 }
+                /*
                 if(mVideoRecorder != null) {
                     mVideoRecorder.release();
                     mVideoRecorder = null;
-                }
+                }*/
             }
         });
     }
@@ -215,7 +218,7 @@ public class HdrCamera {
     /* configure preview size depending on possible texture sizes provided by the camera hardware
     * found in CameraCharacteristics
     * */
-    private void configurePreview(AutoFitTextureView textureView){
+    private Size configurePreview(AutoFitTextureView textureView){
 
         //get possible sizes for use with SurfaceTextures
         Size previewSize = VideoSizeConfiguration.choosePreviewSize(
@@ -227,12 +230,14 @@ public class HdrCamera {
 
         int orientation = mAssociatedActivity.getResources().getConfiguration().orientation;
 
-        //setAspectRation should fire onSurfaceTextureSizeChanged
+        //setAspectRation should fire onSurfaceTextureSizeChanged so no need to call it explicitly after this
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
         } else {
             textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
         }
+
+        return previewSize;
     }
 
     /**
@@ -241,9 +246,9 @@ public class HdrCamera {
      *
      * @param previewTextureView the preview texture view for this open camera
      */
-    private void setupSurfaces(AutoFitTextureView previewTextureView){
-        int width = previewTextureView.getWidth();
-        int height = previewTextureView.getHeight();
+    private void setupSurfaces(AutoFitTextureView previewTextureView, Size previewSize){
+        int width = previewSize.getWidth();
+        int height = previewSize.getHeight();
 
         //preview surface (texture view)
         SurfaceTexture texture = previewTextureView.getSurfaceTexture();
@@ -255,7 +260,7 @@ public class HdrCamera {
 
         /*consumer surfaces (rs fuse, rs histogram, recorder)*/
         //Recorder Surface
-        Surface recorderSurface = mVideoRecorder.getRecorderSurface();
+        //Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
         //PreviewFuser surface
         PreviewFuser previewFuser = new PreviewFuser(mRS,width, height);
@@ -269,11 +274,17 @@ public class HdrCamera {
 
         //add direct consumer surfaces of camera device
         /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
-        mConsumerSurfaces.set(0, previewFuserSurface);
-        mConsumerSurfaces.set(1, recorderSurface);
+        //TODO are the sizes supported by
+        mConsumerSurfaces = Arrays.asList(previewFuserSurface);
+        //mConsumerSurfaces.set(1, recorderSurface);
         //TODO update mConsumerSurfaces with a third object to make space for renderscript
     }
 
+    /* GETTER & SETTER METHODS */
+
+    public CameraDevice getCameraDevice(){
+        return mCameraDevice;
+    }
 
     /* RECORDER OPERATION METHODS */
     public void startRecording(){
