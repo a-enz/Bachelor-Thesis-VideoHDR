@@ -13,6 +13,10 @@ import android.util.Size;
 import android.view.Surface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import aenz.renderscript.PreviewFuser;
 
 /**
  * Created by andi on 13.07.2015.
@@ -42,7 +46,7 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private ArrayList<Surface> mConsumerSurfaces;
+    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
 
     /* Object handling the Video recording of this camera */
     private VideoRecorder mVideoRecorder;
@@ -83,11 +87,18 @@ public class HdrCamera {
         @Override
         public void onOpened(CameraDevice camera) {
             mCameraDevice = camera;
-            //TODO start preview:
-            /* -create consumer surfaces(
-             * -create alternating session object
-             * -set alternating request
-             * */
+
+            //create alternating session and start first request
+            /* no need to call AlternatingSession.setAlternatingCapture here since after creation of
+            * aCaptureSession a Callback (onConfigured) will directly invoke that method //TODO initial values?
+            * for now we just assume that it is best to reset the values every time the camera is closed and then
+            * opened again*/
+
+            //TODO later on this will probably be a global object since we need to access setter method from histogram/exposure metering
+            AlternatingSession aCaptureSession = new AlternatingSession(mCameraDevice,
+                    mConsumerSurfaces,
+                    mCameraHandler);
+
         }
 
         @Override
@@ -177,6 +188,8 @@ public class HdrCamera {
             }
         });
 
+        /* starting an alternating capture session is only done after succcessful opening the camera
+        * and is handled by the mCameraStateCallback object */
     }
 
     public void closeCamera(){
@@ -229,38 +242,52 @@ public class HdrCamera {
      * @param previewTextureView the preview texture view for this open camera
      */
     private void setupSurfaces(AutoFitTextureView previewTextureView){
+        int width = previewTextureView.getWidth();
+        int height = previewTextureView.getHeight();
+
         //preview surface (texture view)
         SurfaceTexture texture = previewTextureView.getSurfaceTexture();
         assert texture!=null;
-        texture.setDefaultBufferSize(previewTextureView.getWidth(), previewTextureView.getHeight());//TODO does previewTextureVIew have the correct sizes? it should have since it was configured previously in configurePreview()
-        Surface previewSurface = new Surface(texture); //create surface for the textureView //TODO release: in closeCamera?
+        texture.setDefaultBufferSize(width, height);
+        //TODO does previewTextureVIew have the correct sizes? it should have since it was configured previously in configurePreview()
+        Surface previewSurface = new Surface(texture); //create surface for the textureView
+        // TODO release previewSurface: in closeCamera()?
 
-        //consumer surfaces (rs fuse, rs histogram, recorder)
+        /*consumer surfaces (rs fuse, rs histogram, recorder)*/
+        //Recorder Surface
         Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
+        //PreviewFuser surface
+        PreviewFuser previewFuser = new PreviewFuser(mRS,width, height);
+        Surface previewFuserSurface = previewFuser.getInputSurface();
+
+        //TODO Histogram surface
+
+        /* connect surfaces to camera output and preview to RS output */
+        //connect fuser output to app preview
+        previewFuser.setOutputSurface(previewSurface);
+
+        //add direct consumer surfaces of camera device
+        /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
+        mConsumerSurfaces.set(0, previewFuserSurface);
+        mConsumerSurfaces.set(1, recorderSurface);
+        //TODO update mConsumerSurfaces with a third object to make space for renderscript
     }
 
 
     /* RECORDER OPERATION METHODS */
     public void startRecording(){
-
-        /*
-            TODO create AlternatingSession (maybe already earlier) and start capture
-            by some preset values.
-         */
-
-        //TODO somewhere should the results from the HistogramEvaluation feed back into AlternatingSession.setAlternatingCapture
+        mVideoRecorder.start();
     }
 
     public void stopRecording(){
-
+        mVideoRecorder.stop();
     }
 
 
 
 
     /* HELPER METHODS */
-
 
     private boolean hasCapability(int[] capabilities, int capability) {
         for (int c : capabilities) {

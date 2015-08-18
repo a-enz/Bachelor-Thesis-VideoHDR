@@ -29,19 +29,19 @@ public class PreviewFuser {
     public ProcessingTask mFuseTask;
 
 
-    public PreviewFuser(RenderScript rs, Size dimensions) {
+    public PreviewFuser(RenderScript rs, int width, int height) {
 
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
-        yuvTypeBuilder.setX(dimensions.getWidth());
-        yuvTypeBuilder.setY(dimensions.getHeight());
+        yuvTypeBuilder.setX(width);
+        yuvTypeBuilder.setY(height);
         yuvTypeBuilder.setYuvFormat(ImageFormat.YUV_420_888);
         mInputAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
                 Allocation.USAGE_IO_INPUT | Allocation.USAGE_SCRIPT);
 
 
         Type.Builder rgbTypeBuilder = new Type.Builder(rs, Element.RGBA_8888(rs));
-        rgbTypeBuilder.setX(dimensions.getWidth());
-        rgbTypeBuilder.setY(dimensions.getHeight());
+        rgbTypeBuilder.setX(width);
+        rgbTypeBuilder.setY(height);
         mPrevAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
                 Allocation.USAGE_SCRIPT);
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),

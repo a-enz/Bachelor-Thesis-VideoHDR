@@ -28,7 +28,13 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
     private static final long MILLI_SECOND = MICRO_SECOND * 1000;
     private static final long ONE_SECOND = MILLI_SECOND * 1000;
 
-    private static final long FRAME_DURATION = ONE_SECOND / 30;
+    public static final long FRAME_DURATION = ONE_SECOND / 30; //has to be accessible from exposure metering
+
+    //initial exposure time and iso
+    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 33;
+    private static final int INITIAL_ODD_ISO = 120;
+    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 33;
+    private static final int INITIAL_EVEN_ISO = 120;
 
     /*The associated CameraCaptureSession. Should not change, or else we need to create
     a new AlternatingSession as well */
@@ -61,11 +67,16 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
                 @Override
                 public void onConfigured(CameraCaptureSession session) {
                     mCaptureSession = session;
-                    mCameraHandler.post(new Runnable() {
-                        public void run() {
-                            //TODO let stuff run which means calling setAlternatingRequest with maybe some preset values
-                        }
-                    });
+
+                    /* after configuration start of with some initial values */
+                    //TODO would probably be better to remember values from previous open camera
+                    /* since the brightness and such should not have changed that much?*/
+                    //TODO is this only called when opening camera?
+                    setAlternatingCapture(INITIAL_EVEN_ISO,
+                                        INITIAL_ODD_ISO,
+                                        INITIAL_EVEN_EXPOSURE,
+                                        INITIAL_ODD_EXPOSURE);
+
                 }
 
                 @Override
@@ -181,10 +192,10 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
     /**
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
-     * @param evenIso value between 80 and 1200?
-     * @param oddIso value between 80 and 1200?
+     * @param evenIso value for the even frame: between 80 and 1200?
+     * @param oddIso value for the odd frame: between 80 and 1200?
      * @param mEvenExposure value in milliseconds. should not be larger than FRAME_DURATION
-     * @param mOddExposure value in milliseconds. should not be larger than FRAME_DURATION
+     * @param mOddExposure value in milliseconds. should not be larger than FRAME_DURATION //TODO where to check for that. probably in Exposure Metering
      */
     public void setAlternatingCapture(int evenIso, int oddIso,
                                       long mEvenExposure, long mOddExposure){
