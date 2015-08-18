@@ -5,18 +5,14 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.*;
-import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.MediaStore;
+import android.renderscript.RenderScript;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * Created by andi on 13.07.2015.
@@ -51,6 +47,9 @@ public class HdrCamera {
     /* Object handling the Video recording of this camera */
     private VideoRecorder mVideoRecorder;
 
+    //Renderscript object used for two scripts: preview fusion and histogram
+    private RenderScript mRS;
+
 
 
 
@@ -67,6 +66,7 @@ public class HdrCamera {
 
         mAssociatedActivity = activity;
         mManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        mRS = RenderScript.create(activity);
 
         createWithCapabilities();
 
@@ -79,12 +79,15 @@ public class HdrCamera {
 
     /* CAMERA STATE & RESOURCES METHODS */
 
-
     private final CameraDevice.StateCallback mCameraStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
             mCameraDevice = camera;
-            //TODO create VideoRecorder
+            //TODO start preview:
+            /* -create consumer surfaces(
+             * -create alternating session object
+             * -set alternating request
+             * */
         }
 
         @Override
@@ -147,10 +150,19 @@ public class HdrCamera {
     /* Open Method for the camera, needs to run on background thread since it is a long operation */
     public void openCamera(AutoFitTextureView textureView){
 
+        //first configure the preview texture
         configurePreview(textureView);
 
-        mVideoRecorder = new VideoRecorder();
+        //set up the VideoRecorder for the correct size and orientation of captured frames
+        int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
+        int width = textureView.getWidth();
+        int height = textureView.getHeight();
+        mVideoRecorder = new VideoRecorder(rotation, width, height);
 
+        //set consumer surfaces
+        setupSurfaces(textureView);
+
+        //open the camera device with defined State Callbacks and a Handler to the camera thread
         mCameraHandler.post(new Runnable() {
             public void run() {
                 if (mCameraDevice != null) {
@@ -176,7 +188,8 @@ public class HdrCamera {
                     mCameraDevice = null;
                 }
                 if(mVideoRecorder != null) {
-                    //TODO release /terminate properly
+                    mVideoRecorder.release();
+                    mVideoRecorder = null;
                 }
             }
         });
@@ -207,6 +220,24 @@ public class HdrCamera {
         } else {
             textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
         }
+    }
+
+    /**
+     * Set up the consumer surfaces of the camera, should not have more than 4
+     * Also configure the output of the preview-fuser to the preview surface
+     *
+     * @param previewTextureView the preview texture view for this open camera
+     */
+    private void setupSurfaces(AutoFitTextureView previewTextureView){
+        //preview surface (texture view)
+        SurfaceTexture texture = previewTextureView.getSurfaceTexture();
+        assert texture!=null;
+        texture.setDefaultBufferSize(previewTextureView.getWidth(), previewTextureView.getHeight());//TODO does previewTextureVIew have the correct sizes? it should have since it was configured previously in configurePreview()
+        Surface previewSurface = new Surface(texture); //create surface for the textureView //TODO release: in closeCamera?
+
+        //consumer surfaces (rs fuse, rs histogram, recorder)
+        Surface recorderSurface = mVideoRecorder.getRecorderSurface();
+
     }
 
 

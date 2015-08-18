@@ -148,7 +148,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureSession");
             e.printStackTrace();
-            mCamera.close(); //TODO is this really necessary here? although something did go horribly wrong
+            mCamera.close(); //TODO is this really necessary here? although something did go horribly wrong should it be called
         }
 
 
@@ -165,19 +165,22 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
         if (mCaptureSession == null || mRequestBuilder == null)
             return false;
 
-        //TODO previewBuilder and RecordBuilder have different set of target surfaces
-        /* PreviewBuilder: should have several Renderscript target surfaces
-        * RecordBuilder: same as PreviewBuilder with additional MediaRecorder surface */
+
         for(Surface surface : mConsumerSurfaces){
             mRequestBuilder.addTarget(surface);
         }
+
+        //set auto exposure mode to off, otherwise we can't do manual double exposure
+        //TODO maybe more settings here are needed for the whole session
+        mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
 
         return true;
     }
 
     /*for now only for the previewBuilder */
     /**
-     * Create and execute (enqueue) a capture request
+     * Create and execute (enqueue) a capture request. These are the only request settings the should
+     * be modified during a session
      * @param evenIso value between 80 and 1200?
      * @param oddIso value between 80 and 1200?
      * @param mEvenExposure value in milliseconds. should not be larger than FRAME_DURATION

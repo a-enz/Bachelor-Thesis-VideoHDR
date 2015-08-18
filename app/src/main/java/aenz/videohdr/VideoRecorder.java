@@ -16,11 +16,12 @@ import java.util.Date;
  * Created by andi on 13.07.2015.
  *
  * Wrapper Class for whatever is used to capture frames
- * For now this is implemented with {@link MediaRecorder} for simplicity.
+ * For now this is implemented with {@link MediaRecorder} for simplicity.Usage of this
+ * wrapper class is the same as for MediaRecorder detailed on Android API
  * Later on I might use {@link android.media.MediaCodec} for more in depth control over
  * the video frames.
  *
- * This class takes care of storing the file and generating metadata of the frames
+ * This class takes care of storing the file (and generating metadata of the frames)
  */
 public class VideoRecorder {
     private static final String TAG = "VideoRecorder";
