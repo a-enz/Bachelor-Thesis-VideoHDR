@@ -20,7 +20,7 @@ import java.util.List;
  * Later on only parameters for frame exposure should be changed (like iso, exposure time)
  * Created by andi on 14.08.2015.
  */
-public class AlternatingSession {//TODO maybe this class would be better as a singleton instance
+public class AlternatingSession {
     private static final String TAG = "AlternatingSession";
 
     //timing constants
@@ -66,12 +66,22 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
 
                 @Override
                 public void onConfigured(CameraCaptureSession session) {
+                    /* we assume this is only called when camera is opened */
                     mCaptureSession = session;
+
+                    //add consumer surfaces to builder
+                    for(Surface surface : mConsumerSurfaces){
+                        mRequestBuilder.addTarget(surface);
+                    }
+
+                    //set auto exposure mode to off, otherwise we can't do manual double exposure
+                    //TODO maybe more settings here are needed for the whole session
+                    mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+
 
                     /* after configuration start of with some initial values */
                     //TODO would probably be better to remember values from previous open camera
                     /* since the brightness and such should not have changed that much?*/
-                    //TODO is this only called when opening camera?
                     setAlternatingCapture(INITIAL_EVEN_ISO,
                             INITIAL_ODD_ISO,
                             INITIAL_EVEN_EXPOSURE,
@@ -87,7 +97,6 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
                      */
 
                     Log.d(TAG, "onConfigureFailed");
-                    //TODO probably should close the camera and end session properly
                     mCamera.closeCamera();
 
 
@@ -167,7 +176,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureSession");
             e.printStackTrace();
-            mCamera.closeCamera(); //TODO is this really necessary here? although something did go horribly wrong should it be called
+            mCamera.closeCamera();
         }
 
 
@@ -181,19 +190,7 @@ public class AlternatingSession {//TODO maybe this class would be better as a si
             e.printStackTrace();
         }
 
-        if (mCaptureSession == null || mRequestBuilder == null)
-            return false;
-
-        //TODO apparently this is called too late. move it
-        for(Surface surface : mConsumerSurfaces){
-            mRequestBuilder.addTarget(surface);
-        }
-
-        //set auto exposure mode to off, otherwise we can't do manual double exposure
-        //TODO maybe more settings here are needed for the whole session
-        mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
-
-        return true;
+        return (mCaptureSession == null || mRequestBuilder == null);
     }
 
     /*for now only for the previewBuilder */
