@@ -31,9 +31,9 @@ public class AlternatingSession {
     public static final long FRAME_DURATION = ONE_SECOND / 30; //has to be accessible from exposure metering
 
     //initial exposure time and iso
-    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 33;
+    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 50;
     private static final int INITIAL_ODD_ISO = 120;
-    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 33;
+    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 50;
     private static final int INITIAL_EVEN_ISO = 120;
 
     /*The associated CameraCaptureSession. Should not change, or else we need to create

@@ -5,6 +5,8 @@ import android.app.Fragment;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -19,7 +21,7 @@ import android.widget.Button;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class VideoHdrFragment extends Fragment implements View.OnClickListener {
+public class VideoHdrFragment extends Fragment implements View.OnClickListener, HdrCamera.ConfigurePreviewListener {
 
     public static final String TAG = "VideoHdrFragment";
 
@@ -110,7 +112,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         * fragment
         */
         super.onCreate(savedInstanceState);
-        mHdrCamera = new HdrCamera(getActivity());
+        mHdrCamera = new HdrCamera(getActivity(), this);
         Log.d(TAG, "camera object created");
     }
 
@@ -135,10 +137,12 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
     public void onResume() {
         super.onResume();
         if (mTextureView.isAvailable()) {
+            configureTransform(mTextureView.getWidth(), mTextureView.getHeight()); //TODO necessary here?
             mHdrCamera.openCamera(mTextureView);
             Log.d(TAG, "onResume: CAMERA is open");
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+            Log.d(TAG, "onResume: surface texture listener set");
         }
     }
 
@@ -161,8 +165,26 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.b_video:{
-                if(mIsRecording) ;//TODO start recording
-                else ; //TODO stop recording
+                if(mIsRecording){
+                    String filepath = mHdrCamera.stopRecording();
+
+
+                    //register file with MediaScanner
+                    MediaScannerConnection.scanFile(
+                            this.getActivity(),
+                            new String[]{filepath},
+                            null,
+                            new MediaScannerConnection.OnScanCompletedListener() {
+                                @Override
+                                public void onScanCompleted(String s, Uri uri) {
+                                    Log.d(TAG, "file should now be visible");
+                                }
+                            }
+                    );
+                }
+                else{
+                    mHdrCamera.startRecording();
+                }
                 break;
             }
 
@@ -183,6 +205,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
         Log.d(TAG, "executing configureTransform");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
+            Log.d(TAG, "aborting configureTransform");
             return;
         }
         int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
@@ -201,6 +224,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener {
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         }
         mTextureView.setTransform(matrix);
+    }
+
+    /* ConfigurePreviewListener METHODS */
+    @Override
+    public void onOrientationChanged(Size prevSize, int width, int height){
+        mPreviewSize = prevSize;
+        configureTransform(width, height);
     }
 
 }

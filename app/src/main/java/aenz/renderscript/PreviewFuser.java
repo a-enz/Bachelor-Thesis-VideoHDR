@@ -11,6 +11,8 @@ import android.util.Size;
 import android.view.Surface;
 
 /**
+ * Mostly copied from HdrViewfinders ViewfinderProcessor class
+ *
  * Created by andi on 13.07.2015.
  */
 public class PreviewFuser {
