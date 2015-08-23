@@ -16,7 +16,7 @@ import android.view.Surface;
  *
  * Together with a RenderScript we generate a Histogram of every captured frame.
  * The Histogram consists of one array of length 256 and measures the occurrence of different
- * rightness levels
+ * brightness levels
  */
 public class HistogramProcessor {
 
@@ -30,7 +30,8 @@ public class HistogramProcessor {
      */
     private Allocation inputImageAllocation;
     private Allocation outputHistogramAllocation;
-    private int[] flatRgbHistogram = new int[EIGHT_BIT_COLOR_SIZE];
+    private int[] evenFrameHist = new int[EIGHT_BIT_COLOR_SIZE];
+    private int[] oddFrameHist = new int[EIGHT_BIT_COLOR_SIZE];
 
     /**
      * Thread for the renderscript execution
@@ -39,6 +40,11 @@ public class HistogramProcessor {
     private HandlerThread mProcessingThread;
     private Handler mProcessingHandler;
 
+
+    /**
+     * HistogramListener
+     */
+    private HistogramProcessorListener mHistogramListener = null;
     /**
      * Script we use
      */
@@ -46,7 +52,10 @@ public class HistogramProcessor {
     private final ScriptIntrinsicHistogram mHistogramScript;
 
 
-    public HistogramProcessor(RenderScript rs, Size inputDimensions){
+    public HistogramProcessor(RenderScript rs, Size inputDimensions, HistogramProcessorListener listener){
+
+        //assign listener
+        mHistogramListener = listener;
 
         //build input allocation
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
@@ -68,11 +77,17 @@ public class HistogramProcessor {
 
         //The Histogram renderscript
         mHistogramScript = ScriptIntrinsicHistogram.create(rs,Element.U8_4(rs));
+        //mHistogramScript.setDotCoefficients(r,g,b,a); TODO could be used to change RBG -> Lum conversion
+        /* used together with .forEach_Dot()
+            presets are: {0.299f, 0.587f, 0,114f,  0.f}
+         */
+
         //output allocation of renderscript TODO can i set that here or do i need to refresh that after every Allocation.iosend()
         mHistogramScript.setOutput(outputHistogramAllocation);
 
 
         new ProcessingTask(inputImageAllocation);
+
 
     }
 
@@ -114,6 +129,7 @@ public class HistogramProcessor {
                 mPendingFrames = 0;
 
                 // Discard extra messages in case processing is slower than frame rate
+                //TODO this should be avoided because it may mess up parity of dark/bright frames
                 mProcessingHandler.removeCallbacks(this);
             }
 
@@ -122,21 +138,34 @@ public class HistogramProcessor {
                 mInputAllocation.ioReceive();
             }
 
-            mFrameCounter++;
 
 
             //processing pass
             mHistogramScript.forEach(mInputAllocation);
 
-            //copy to int[]
-            outputHistogramAllocation.copyTo(flatRgbHistogram);
+            //copy to int[] //TODO this needs better handling of async threading
+            synchronized (this) { //here we assume the copyTo is called in a synchronized way (FIFO according to forEach invocation)
 
+                boolean isEvenFrame = mFrameCounter % 2 == 0;
+                if (mHistogramListener != null || isEvenFrame){
+                    outputHistogramAllocation.copyTo(evenFrameHist);
+                } else {
+                    outputHistogramAllocation.copyTo(oddFrameHist);
+                    mHistogramListener.onHistogramAvailable(evenFrameHist,
+                            oddFrameHist);
+                }
 
-            if(mFrameCounter < 59 /*do something every 59th frame*/) return; //TODO maybe histogram output not sent on every frame
-            mFrameCounter = 0;
-            int pos = 0;
-            //do something with a listener(ExposureMetering)?
+                mFrameCounter++;
+            }
 
         }
+    }
+
+    public void disconnectListener(){
+        mHistogramListener = null;
+    }
+
+    public interface HistogramProcessorListener{
+        public void onHistogramAvailable(int[] evenFrameHistogram, int[] oddFrameHistogram);
     }
 }

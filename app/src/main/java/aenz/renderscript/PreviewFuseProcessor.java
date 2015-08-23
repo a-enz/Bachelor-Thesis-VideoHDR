@@ -102,6 +102,7 @@ public class PreviewFuseProcessor {
                 mPendingFrames = 0;
 
                 // Discard extra messages in case processing is slower than frame rate
+                //TODO this should be avoided because it may mess up parity of dark/bright frames
                 mProcessingHandler.removeCallbacks(this);
             }
 
