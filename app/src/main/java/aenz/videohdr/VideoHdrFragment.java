@@ -201,7 +201,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      * @param viewHeight The height of `mTextureView`
      */
     public void configureTransform(int viewWidth, int viewHeight) {
-        /*
+
         Log.d(TAG, "executing configureTransform");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
@@ -214,17 +214,20 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            float scale = Math.max(
-                    (float) viewHeight / mPreviewSize.getHeight(),
-                    (float) viewWidth / mPreviewSize.getWidth());
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+
+        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+        float scale = Math.max(
+                (float) viewHeight / mPreviewSize.getHeight(),
+                (float) viewWidth / mPreviewSize.getWidth());
+        matrix.postScale(scale, scale, centerX, centerY);
+        if (Surface.ROTATION_0 == rotation) {
+            matrix.postRotate(90 * (rotation - 3), centerX, centerY);
+        } else {
+            matrix.postRotate(90 * (rotation - 1), centerX, centerY);
         }
         mTextureView.setTransform(matrix);
-        */
+
     }
 
     /* ConfigurePreviewListener METHODS */

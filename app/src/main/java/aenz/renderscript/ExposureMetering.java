@@ -4,7 +4,7 @@ import android.renderscript.RenderScript;
 import android.util.Size;
 import android.view.Surface;
 
-import aenz.videohdr.BuildConfig;
+import aenz.videohdr.AlternatingSession;
 
 /**
  * Evaluates output from Histogram Processor and influences input values to AlternatingSession
@@ -29,19 +29,26 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
 
-    public ExposureMetering(){
+    //The capture session we want to influence;
+    private AlternatingSession mCaptureSession;
 
-    }
 
     /* HISTOGRAM EVALUATION METHODS */
-    private void evaluateHistogram(int[] evenFrameHistogram, int[] oddFrameHistogram){
+    private void evaluate(int[] evenFrameHistogram, int[] oddFrameHistogram){
 
         //check histograms -> maybe evaluate if they are really from dark and bright frame
         //check if if even more over/underexposed than before
         //give estimate depending on some set metrics
         //send estimate to alternatingsession
 
+
+
+        //mCaptureSession.setAlternatingCapture(); method should end with a call to this
     }
+
+
+
+
 
     /* HISTOGRAM PROCESSOR HANDLING */
     /**
@@ -51,7 +58,8 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
      * @param inputSize input size of the frames
      * @return the input surface for the HistogramProcessor
      */
-    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize){
+    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize, AlternatingSession captureSession){
+        mCaptureSession = captureSession;
         mHistProc = new HistogramProcessor(rs,inputSize, this);
         return mHistProc.getInputSurface();
     }
@@ -68,8 +76,11 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
 
     @Override
     public void onHistogramAvailable(int[] evenFrameHistogram, int[] oddFrameHistogram) {
-        evaluateHistogram(evenFrameHistogram, oddFrameHistogram);
+        evaluate(evenFrameHistogram, oddFrameHistogram);
     }
+
+
+
 
 
     /* HELPER METHODS */

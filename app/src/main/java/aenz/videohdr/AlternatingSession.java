@@ -68,7 +68,6 @@ public class AlternatingSession {
                 public void onConfigured(CameraCaptureSession session) {
                     /* we assume this is only called when camera is opened */
                     mCaptureSession = session;
-
                     //add consumer surfaces to builder
                     for(Surface surface : mConsumerSurfaces){
                         mRequestBuilder.addTarget(surface);
@@ -184,7 +183,7 @@ public class AlternatingSession {
             /*TODO maybe we should separate this part below from createSessionAndCaptureBuilder and make two different methods*/
             /*not quite sure if it is a good idea to separate requests for preview only and record */
 
-                mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureRequest");
             e.printStackTrace();
