@@ -137,7 +137,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onResume() {
         super.onResume();
         if (mTextureView.isAvailable()) {
-            configureTransform(mTextureView.getWidth(), mTextureView.getHeight()); //TODO necessary here?
+            //configureTransform(mTextureView.getWidth(), mTextureView.getHeight()); //TODO necessary here?
             mHdrCamera.openCamera(mTextureView);
             Log.d(TAG, "onResume: CAMERA is open");
         } else {
@@ -201,7 +201,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      * @param viewHeight The height of `mTextureView`
      */
     public void configureTransform(int viewWidth, int viewHeight) {
-
+        /*
         Log.d(TAG, "executing configureTransform");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
@@ -224,6 +224,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
         }
         mTextureView.setTransform(matrix);
+        */
     }
 
     /* ConfigurePreviewListener METHODS */

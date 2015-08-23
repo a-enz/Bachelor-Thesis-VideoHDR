@@ -7,17 +7,16 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
-import android.util.Size;
 import android.view.Surface;
 
 /**
  * Mostly copied from HdrViewfinders ViewfinderProcessor class
- *
+ * Combined with a renderscript we fuse a double exposure into a single frame
  * Created by andi on 13.07.2015.
  */
-public class PreviewFuser {
+public class PreviewFuseProcessor {
 
-    private static final String TAG = "PreviewFuser";
+    private static final String TAG = "PreviewFuseProcessor";
 
 
     private Allocation mInputAllocation;
@@ -26,12 +25,12 @@ public class PreviewFuser {
 
     private HandlerThread mProcessingThread;
     private Handler mProcessingHandler;
-    private ScriptC_preview_fuser mFuseScript;
+    private ScriptC_preview_fuse mFuseScript;
 
     public ProcessingTask mFuseTask;
 
 
-    public PreviewFuser(RenderScript rs, int width, int height) {
+    public PreviewFuseProcessor(RenderScript rs, int width, int height) {
 
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
         yuvTypeBuilder.setX(width);
@@ -49,11 +48,11 @@ public class PreviewFuser {
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
                 Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
 
-        mProcessingThread = new HandlerThread("PreviewFuser");
+        mProcessingThread = new HandlerThread("PreviewFuseProcessor");
         mProcessingThread.start();
         mProcessingHandler = new Handler(mProcessingThread.getLooper());
 
-        mFuseScript = new ScriptC_preview_fuser(rs);
+        mFuseScript = new ScriptC_preview_fuse(rs);
 
         mFuseScript.set_gPrevFrame(mPrevAllocation);
 

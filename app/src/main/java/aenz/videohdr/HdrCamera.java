@@ -12,11 +12,10 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import aenz.renderscript.PreviewFuser;
+import aenz.renderscript.PreviewFuseProcessor;
 
 /**
  * Created by andi on 13.07.2015.
@@ -46,9 +45,12 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces  = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
+    private List<Surface> mConsumerSurfaces; //  = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
 
     /* Object handling the Video recording of this camera */
+    /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
+     * the second time a VideoRecorder is created MediaRecorder.prepare() fails. this occurs usually
+     * after tilting the phone after a preview can be seen */
     private VideoRecorder mVideoRecorder; //TODO reactive and initialize with proper video sizes (StreamconfigurationMatp)
 
     //Renderscript object used for two scripts: preview fusion and histogram
@@ -172,9 +174,9 @@ public class HdrCamera {
         int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
         int width = previewSize.getWidth();
         int height = previewSize.getHeight(); //TODO later change to sizes received through VideoSizeConfiguration.chooseVideoSize
-        mVideoRecorder = new VideoRecorder(rotation, width, height);
+        //mVideoRecorder = new VideoRecorder(rotation, width, height);
 
-        //set consumer surfaces
+        //connect consumer and preview surfaces
         setupSurfaces(textureView, previewSize);
 
         //open the camera device with defined State Callbacks and a Handler to the camera thread
@@ -205,10 +207,11 @@ public class HdrCamera {
                     mCameraDevice = null;
                 }
 
+                /*
                 if(mVideoRecorder != null) {
                     mVideoRecorder.release();
                     mVideoRecorder = null;
-                }
+                }*/
             }
         });
     }
@@ -249,6 +252,7 @@ public class HdrCamera {
      *
      * @param previewTextureView the preview texture view for this open camera
      */
+
     private void setupSurfaces(AutoFitTextureView previewTextureView, Size previewSize){
         int width = previewSize.getWidth();
         int height = previewSize.getHeight();
@@ -263,23 +267,24 @@ public class HdrCamera {
 
         /*consumer surfaces (rs fuse, rs histogram, recorder)*/
         //Recorder Surface
-        Surface recorderSurface = mVideoRecorder.getRecorderSurface();
+        //Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
-        //PreviewFuser surface
-        PreviewFuser previewFuser = new PreviewFuser(mRS, width, height);
-        Surface previewFuserSurface = previewFuser.getInputSurface();
+        //PreviewFuseProcessor surface
+        PreviewFuseProcessor previewFuseProcessor = new PreviewFuseProcessor(mRS, width, height);
+        Surface previewFuseSurface = previewFuseProcessor.getInputSurface();
 
         //TODO Histogram surface
 
         /* connect surfaces to camera output and preview to RS output */
         //connect fuser output to app preview
-        previewFuser.setOutputSurface(previewSurface);
+        previewFuseProcessor.setOutputSurface(previewSurface);
 
         //add direct consumer surfaces of camera device
         /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
 
-        mConsumerSurfaces.set(0, previewFuserSurface);
-        mConsumerSurfaces.set(1, recorderSurface);
+        mConsumerSurfaces = Arrays.asList(previewFuseSurface);
+        //mConsumerSurfaces.set(0, previewFuseSurface);
+        //mConsumerSurfaces.set(1, recorderSurface);
         //TODO update mConsumerSurfaces with a third object to make space for renderscript
     }
 
