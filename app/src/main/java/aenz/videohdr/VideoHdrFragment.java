@@ -60,6 +60,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture,
                                                 int width, int height) {
+            Log.d(TAG, "opening configTrans from onSTSChanged with: w=" + width + ", h=" + height);
             configureTransform(width, height);
         }
 
@@ -208,10 +209,14 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             Log.d(TAG, "aborting configureTransform");
             return;
         }
+
         int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+
         Matrix matrix = new Matrix();
+
         RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        //in the following declaration the width and height is switched to account for weird renderscript behaviour :S
+        RectF bufferRect = new RectF(0, 0, mPreviewSize.getWidth(), mPreviewSize.getHeight());
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
 
@@ -221,13 +226,14 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 (float) viewHeight / mPreviewSize.getHeight(),
                 (float) viewWidth / mPreviewSize.getWidth());
         matrix.postScale(scale, scale, centerX, centerY);
-        if (Surface.ROTATION_0 == rotation) {
-            matrix.postRotate(90 * (rotation - 3), centerX, centerY);
-        } else {
-            matrix.postRotate(90 * (rotation - 1), centerX, centerY);
-        }
-        mTextureView.setTransform(matrix);
 
+        if (Surface.ROTATION_0 == rotation) {
+            matrix.postRotate(90,centerX,centerY);
+        } else if (Surface.ROTATION_270 == rotation) {
+            matrix.postRotate(180, centerX, centerY);
+        }
+
+        mTextureView.setTransform(matrix);
     }
 
     /* ConfigurePreviewListener METHODS */

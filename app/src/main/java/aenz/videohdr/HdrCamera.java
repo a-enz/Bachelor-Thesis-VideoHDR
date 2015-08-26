@@ -53,6 +53,8 @@ public class HdrCamera {
      * after tilting the phone after a preview can be seen */
     private VideoRecorder mVideoRecorder; //TODO reactive and initialize with proper video sizes (StreamconfigurationMatp)
 
+    //PreviewFuseProcessor in charge of fusing double exposure frames by passing it through a renderscript
+    private PreviewFuseProcessor mPreviewFuseProcessor;
     //Renderscript object used for two scripts: preview fusion and histogram
     private RenderScript mRS;
 
@@ -170,14 +172,18 @@ public class HdrCamera {
         //first configure the preview texture
         Size previewSize = configurePreview(textureView);
 
-        //set up the VideoRecorder for the correct size and orientation of captured frames
         int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
         int width = previewSize.getWidth();
-        int height = previewSize.getHeight(); //TODO later change to sizes received through VideoSizeConfiguration.chooseVideoSize
+        int height = previewSize.getHeight();
+
+        //set up the VideoRecorder for the correct size and orientation of captured frames
         //mVideoRecorder = new VideoRecorder(rotation, width, height);
 
+        //set up PreviewFuseProcessor
+        mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, width, height);
+
         //connect consumer and preview surfaces
-        setupSurfaces(textureView, previewSize);
+        setupSurfaces(textureView, width, height);
 
         //open the camera device with defined State Callbacks and a Handler to the camera thread
         mCameraHandler.post(new Runnable() {
@@ -240,7 +246,7 @@ public class HdrCamera {
             textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
         }
 
-
+        Log.d(TAG, "opening configTrans from configPrev with: w=" + textureView.getWidth() + ", h=" + textureView.getHeight());
         mConfigPreviewListener.onOrientationChanged(previewSize, textureView.getWidth(), textureView.getHeight());
 
         return previewSize;
@@ -253,9 +259,7 @@ public class HdrCamera {
      * @param previewTextureView the preview texture view for this open camera
      */
 
-    private void setupSurfaces(AutoFitTextureView previewTextureView, Size previewSize){
-        int width = previewSize.getWidth();
-        int height = previewSize.getHeight();
+    private void setupSurfaces(AutoFitTextureView previewTextureView, int width, int height){
 
         //preview surface (texture view)
         SurfaceTexture texture = previewTextureView.getSurfaceTexture();
@@ -270,14 +274,13 @@ public class HdrCamera {
         //Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
         //PreviewFuseProcessor surface
-        PreviewFuseProcessor previewFuseProcessor = new PreviewFuseProcessor(mRS, width, height);
-        Surface previewFuseSurface = previewFuseProcessor.getInputSurface();
+        Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
 
         //TODO Histogram surface
 
         /* connect surfaces to camera output and preview to RS output */
         //connect fuser output to app preview
-        previewFuseProcessor.setOutputSurface(previewSurface);
+        mPreviewFuseProcessor.setOutputSurface(previewSurface);
 
         //add direct consumer surfaces of camera device
         /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
@@ -318,5 +321,9 @@ public class HdrCamera {
 
     public interface ConfigurePreviewListener{
         public void onOrientationChanged(Size prevSize, int width, int height);
+    }
+
+    private boolean isLandscape(int rotation){
+        return rotation != 0;
     }
 }
