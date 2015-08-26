@@ -45,7 +45,7 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces; //  = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
+    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
 
     /* Object handling the Video recording of this camera */
     /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
@@ -177,7 +177,7 @@ public class HdrCamera {
         int height = previewSize.getHeight();
 
         //set up the VideoRecorder for the correct size and orientation of captured frames
-        //mVideoRecorder = new VideoRecorder(rotation, width, height);
+        mVideoRecorder = new VideoRecorder(rotation, width, height);
 
         //set up PreviewFuseProcessor
         mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, width, height);
@@ -213,11 +213,11 @@ public class HdrCamera {
                     mCameraDevice = null;
                 }
 
-                /*
+
                 if(mVideoRecorder != null) {
                     mVideoRecorder.release();
                     mVideoRecorder = null;
-                }*/
+                }
             }
         });
     }
@@ -271,7 +271,7 @@ public class HdrCamera {
 
         /*consumer surfaces (rs fuse, rs histogram, recorder)*/
         //Recorder Surface
-        //Surface recorderSurface = mVideoRecorder.getRecorderSurface();
+        Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
         //PreviewFuseProcessor surface
         Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
@@ -285,9 +285,9 @@ public class HdrCamera {
         //add direct consumer surfaces of camera device
         /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
 
-        mConsumerSurfaces = Arrays.asList(previewFuseSurface);
-        //mConsumerSurfaces.set(0, previewFuseSurface);
-        //mConsumerSurfaces.set(1, recorderSurface);
+        //mConsumerSurfaces = Arrays.asList(previewFuseSurface);
+        mConsumerSurfaces.set(0, previewFuseSurface);
+        mConsumerSurfaces.set(1, recorderSurface);
         //TODO update mConsumerSurfaces with a third object to make space for renderscript
     }
 
@@ -299,10 +299,12 @@ public class HdrCamera {
 
     /* RECORDER OPERATION METHODS */
     public void startRecording(){
+        Log.d(TAG, "trying to start recording");
         mVideoRecorder.start();
     }
 
     public String stopRecording(){
+        Log.d(TAG, "trying to stop recording");
         return mVideoRecorder.stop();
         //TODO might need to restart preview
     }

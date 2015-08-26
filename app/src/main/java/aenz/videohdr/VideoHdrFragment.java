@@ -94,7 +94,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     /**
      * global recording state of the camera
      */
-    private static boolean mIsRecording;
+    private static boolean mIsRecording = false;
 
 
 
@@ -182,9 +182,11 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                                 }
                             }
                     );
+                    mIsRecording = false;
                 }
                 else{
                     mHdrCamera.startRecording();
+                    mIsRecording = true;
                 }
                 break;
             }

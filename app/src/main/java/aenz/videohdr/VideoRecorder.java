@@ -103,7 +103,7 @@ public class VideoRecorder {
 
         //rename file with timestamp
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmSSS").format(new Date());
-        String filePath = directoryPath + "VID_" + timeStamp + ".mp4";
+        String filePath = directoryPath + "/VID_" + timeStamp + ".mp4";
         tempVideoFile.renameTo(new File(filePath));
         Log.d(TAG, "Output video filepath correct? " + filePath);
 
