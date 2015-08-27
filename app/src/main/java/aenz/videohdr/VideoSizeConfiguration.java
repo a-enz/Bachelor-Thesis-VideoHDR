@@ -51,13 +51,15 @@ public final class VideoSizeConfiguration {
                                          int width,
                                          int height){
 
+        width /= 2;
+        height /= 2;
         StreamConfigurationMap map = characteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
         Size[] choices = map.getOutputSizes(PREVIEW_CLASS);
 
 
-        // Collect the supported resolutions that are at least as big as the preview Surface
+        // Collect the supported resolutions that are at least as big as half the preview Surface
         List<Size> bigEnough = new ArrayList<>();
         for (Size option : choices) {
             if (option.getHeight() == option.getWidth() * ASPECT_RATIO &&
@@ -66,6 +68,7 @@ public final class VideoSizeConfiguration {
             }
         }
 
+
         /*
         // Pick the smallest of those, assuming we found any
         if (bigEnough.size() > 0) {
@@ -73,9 +76,9 @@ public final class VideoSizeConfiguration {
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
-        }*/
-
-       return choices[17]; //TODO do something actually useful
+        }
+        */
+        return choices[17];
     }
 
     /**
