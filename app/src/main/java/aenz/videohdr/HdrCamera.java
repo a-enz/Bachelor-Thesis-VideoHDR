@@ -41,6 +41,14 @@ public class HdrCamera {
     private HandlerThread mCameraThread;
     private Handler mCameraHandler;
 
+    /* PREVIEW TEXTURE */
+    private AutoFitTextureView mPreviewTextureView;
+
+    /* SIZES FOR THE DIFFERENT SURFACES */
+    private Size mPreviewSize;
+    private Size mRecordSize;
+    private Size mHistogramSize;
+
     /* Consumer Surfaces of this camera */
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
@@ -77,9 +85,10 @@ public class HdrCamera {
         mManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         mRS = RenderScript.create(activity);
 
+        //pick an actual camera device: we want a back facing camera with certain capabilities
         createWithCapabilities();
 
-        //starting camera thread TODO might be better in open/close camera like in Camera2Video example
+        //starting camera thread
         mCameraThread = new HandlerThread("CameraOpsThread");
         mCameraThread.start();
         mCameraHandler = new Handler(mCameraThread.getLooper());
@@ -166,24 +175,21 @@ public class HdrCamera {
     }
 
     /* Open Method for the camera, needs to run on background thread since it is a long operation */
-    public void openCamera(AutoFitTextureView textureView){
+    public void openCamera(AutoFitTextureView previewTexture){
+
+        mPreviewTextureView = previewTexture;
+
+        //figure out good preview and recording sizes (and size of histogram input)
+        mPreviewSize = configurePreview(mPreviewTextureView);
+        mRecordSize = mPreviewSize;
+        mHistogramSize = mPreviewSize;
 
         //TODO configure also size of recorded video. preview depends on it?
         //first configure the preview texture
-        Size previewSize = configurePreview(textureView);
 
-        int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
-        int width = previewSize.getWidth();
-        int height = previewSize.getHeight();
-
-        //set up the VideoRecorder for the correct size and orientation of captured frames
-        mVideoRecorder = new VideoRecorder(rotation, width, height);
-
-        //set up PreviewFuseProcessor
-        mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, width, height);
-
-        //connect consumer and preview surfaces
-        setupSurfaces(textureView, width, height);
+        /* create VideoRecorder, PreviewFuseProcessor, HistogramProcessor and
+            connect their surfaces to camera & preview texture*/
+        setupSurfaces();
 
         //open the camera device with defined State Callbacks and a Handler to the camera thread
         mCameraHandler.post(new Runnable() {
@@ -256,39 +262,43 @@ public class HdrCamera {
      * Set up the consumer surfaces of the camera, should not have more than 4
      * Also configure the output of the preview-fuser to the preview surface
      *
-     * @param previewTextureView the preview texture view for this open camera
      */
 
-    private void setupSurfaces(AutoFitTextureView previewTextureView, int width, int height){
+    private void setupSurfaces(){
+        int rotation = mAssociatedActivity.getWindowManager().getDefaultDisplay().getRotation();
+
 
         //preview surface (texture view)
-        SurfaceTexture texture = previewTextureView.getSurfaceTexture();
+        SurfaceTexture texture = mPreviewTextureView.getSurfaceTexture();
         assert texture!=null;
-        texture.setDefaultBufferSize(width, height);
-
+        texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         Surface previewSurface = new Surface(texture); //create surface for the textureView
 
 
-        /*consumer surfaces (rs fuse, rs histogram, recorder)*/
-        //Recorder Surface
+
+        //set up PreviewFuseProcessor
+        mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
+        Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
+
+
+
+        //set up the VideoRecorder for the correct size and orientation of captured frames
+        mVideoRecorder = new VideoRecorder(mAssociatedActivity, rotation, mRecordSize);
         Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
-        //PreviewFuseProcessor surface
-        Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
+
 
         //TODO Histogram surface
 
-        /* connect surfaces to camera output and preview to RS output */
-        //connect fuser output to app preview
-        mPreviewFuseProcessor.setOutputSurface(previewSurface);
 
-        //add direct consumer surfaces of camera device
+        //connect output of the fuse script to the preview texture
+        mPreviewFuseProcessor.setOutputSurface(previewSurface);
         /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
 
-        //mConsumerSurfaces = Arrays.asList(previewFuseSurface);
+        //connect fusescript, recorder and exposuremetering directly to camera output
         mConsumerSurfaces.set(0, previewFuseSurface);
         mConsumerSurfaces.set(1, recorderSurface);
-        //TODO update mConsumerSurfaces with a third object to make space for renderscript
+        //TODO update mConsumerSurfaces with a third object to make space for histogram
     }
 
     /* GETTER & SETTER METHODS */
@@ -298,15 +308,20 @@ public class HdrCamera {
     }
 
     /* RECORDER OPERATION METHODS */
-    public void startRecording(){
+    public void startRecording() throws IllegalStateException {
         Log.d(TAG, "trying to start recording");
         mVideoRecorder.start();
     }
 
-    public String stopRecording(){
+    public void stopRecording() throws IllegalStateException {
         Log.d(TAG, "trying to stop recording");
-        return mVideoRecorder.stop();
+        mVideoRecorder.stop();
         //TODO might need to restart preview
+        /* preview needs to be restarted because stoping the videorecorder will put the
+        * used MediaRecorder into the Initialize state, which means no output surface is available.
+        * This also means the whole camera surface connection is reset and needs to be built again.
+        * essentially we need to do the whole thing that is done when opening the camera*/
+        //TODO restart preview
     }
 
 

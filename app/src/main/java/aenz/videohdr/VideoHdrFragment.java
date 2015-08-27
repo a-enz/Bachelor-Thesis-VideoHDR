@@ -10,12 +10,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 
 /**
@@ -158,7 +160,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     /**
      * Only one button is available right now, record start/stop. Here the recording should
      * be started while the Camera is already capturing Frames in the background like it would for the
-     * recording. That is because we also need to provide a preview and do some exposure meetering to
+     * recording. That is because we also need to provide a preview and do some exposure metering to
      * get hopefully good parameter settings for the actual recorded part
      * @param v
      */
@@ -167,26 +169,22 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         switch(v.getId()){
             case R.id.b_video:{
                 if(mIsRecording){
-                    String filepath = mHdrCamera.stopRecording();
-
-
-                    //register file with MediaScanner
-                    MediaScannerConnection.scanFile(
-                            this.getActivity(),
-                            new String[]{filepath},
-                            null,
-                            new MediaScannerConnection.OnScanCompletedListener() {
-                                @Override
-                                public void onScanCompleted(String s, Uri uri) {
-                                    Log.d(TAG, "file should now be visible");
-                                }
-                            }
-                    );
-                    mIsRecording = false;
+                    try{
+                        mHdrCamera.stopRecording();
+                        mIsRecording = false;
+                        mRecordButton.setText(R.string.record);
+                    } catch (IllegalStateException e){
+                        e.printStackTrace();
+                    }
                 }
                 else{
-                    mHdrCamera.startRecording();
-                    mIsRecording = true;
+                    try{
+                        mHdrCamera.startRecording();
+                        mIsRecording = true;
+                        mRecordButton.setText(R.string.stop);
+                    } catch (IllegalStateException e){
+                        e.printStackTrace();
+                    }
                 }
                 break;
             }

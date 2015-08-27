@@ -7,6 +7,8 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
+import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 
 /**
@@ -30,7 +32,9 @@ public class PreviewFuseProcessor {
     public ProcessingTask mFuseTask;
 
 
-    public PreviewFuseProcessor(RenderScript rs, int width, int height) {
+    public PreviewFuseProcessor(RenderScript rs, Size previewSize) {
+        int width = previewSize.getWidth();
+        int height = previewSize.getHeight();
 
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
         yuvTypeBuilder.setX(width);
@@ -114,6 +118,7 @@ public class PreviewFuseProcessor {
             mFuseScript.set_gFrameCounter(mFrameCounter++);
             mFuseScript.set_gCurrentFrame(mInputAllocation);
 
+            if(mFrameCounter % 15 == 0) Log.d(TAG, "fusing frames");
 
             // Run processing pass
             mFuseScript.forEach_fuseFrames(mPrevAllocation, mOutputAllocation);

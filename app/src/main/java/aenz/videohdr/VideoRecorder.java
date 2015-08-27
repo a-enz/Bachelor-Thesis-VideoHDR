@@ -1,11 +1,13 @@
 package aenz.videohdr;
 
 import android.app.Activity;
+import android.content.Context;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 
@@ -38,6 +40,8 @@ public class VideoRecorder {
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
+    private Activity mAssociatedActivity;
+
     private MediaRecorder mRecorder; //one recorder per videoRecorder
 
     /* File storage and naming, timestamp added later on */
@@ -45,11 +49,12 @@ public class VideoRecorder {
             Environment.DIRECTORY_DCIM + "/Camera/"); //TODO after storing rename with timestamp or something
     private static final File tempVideoFile = new File(directoryPath,"tmp.mp4");
 
-    public VideoRecorder(int rotation, int width, int height){
+    public VideoRecorder (Activity activity, int rotation, Size recorderSize){
 
+        mAssociatedActivity = activity;
         mRecorder = new MediaRecorder();
         try {
-            setupRecorder(rotation, width, height);
+            setupRecorder(rotation, recorderSize.getWidth(), recorderSize.getHeight());
         } catch (IOException e) {
             Log.d(TAG, "MediaRecorder setup failed");
             e.printStackTrace();
@@ -83,23 +88,14 @@ public class VideoRecorder {
         return mRecorder.getSurface();
     }
 
-    public void start(){
-        try {
-            mRecorder.start();
-        }catch(IllegalStateException e){
-            Log.d(TAG, "starting the MediaRecorder failed");
-            e.printStackTrace();
-        }
+    public void start() throws IllegalStateException {
+        mRecorder.start();
     }
 
-    public String stop(){
-        try {
-            mRecorder.stop();
-            mRecorder.reset();
-        }catch (IllegalStateException e){
-            Log.d(TAG, "stopping the MediaRecorder failed");
-            e.printStackTrace();
-        }
+    public void stop() throws IllegalStateException {
+
+        mRecorder.stop();
+        mRecorder.reset();
 
         //rename file with timestamp
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmSSS").format(new Date());
@@ -107,7 +103,18 @@ public class VideoRecorder {
         tempVideoFile.renameTo(new File(filePath));
         Log.d(TAG, "Output video filepath correct? " + filePath);
 
-        return filePath;
+        //register file with MediaScanner
+        MediaScannerConnection.scanFile(
+                mAssociatedActivity,
+                new String[]{filePath},
+                null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    @Override
+                    public void onScanCompleted(String s, Uri uri) {
+                        Log.d(TAG, "file should now be visible");
+                    }
+                }
+        );
     }
 
     public void release(){
