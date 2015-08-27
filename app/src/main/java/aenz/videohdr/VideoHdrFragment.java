@@ -168,23 +168,20 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.b_video:{
-                if(mIsRecording){
-                    try{
+                try{
+                    if(mIsRecording){
                         mHdrCamera.stopRecording();
                         mIsRecording = false;
                         mRecordButton.setText(R.string.record);
-                    } catch (IllegalStateException e){
-                        e.printStackTrace();
                     }
-                }
-                else{
-                    try{
+                    else{
                         mHdrCamera.startRecording();
                         mIsRecording = true;
                         mRecordButton.setText(R.string.stop);
-                    } catch (IllegalStateException e){
-                        e.printStackTrace();
+
                     }
+                } catch (IllegalStateException e){
+                    e.printStackTrace();
                 }
                 break;
             }

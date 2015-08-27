@@ -66,11 +66,13 @@ public class HdrCamera {
     //Renderscript object used for two scripts: preview fusion and histogram
     private RenderScript mRS;
 
+    //Configurable Capture Session that triggers camera frame capture
+    private AlternatingSession mCaptureSession;
     //Listener for preview changes made from the camera
     private ConfigurePreviewListener mConfigPreviewListener;
 
     /**
-     * Creator Method of this class. Instantiate the Camera with desired capabilites like
+     * Creator Method of this class. Instantiate the Camera with desired capabilities like
      * back facing, a sufficient hardware support level, a.s.o
      * A Thread to handle camera operation in the background is also created.
      *
@@ -111,7 +113,7 @@ public class HdrCamera {
             * opened again*/
 
             //TODO later on this will probably be a global object since we need to access setter method from histogram/exposure metering
-            AlternatingSession aCaptureSession = new AlternatingSession(HdrCamera.this,
+            mCaptureSession = new AlternatingSession(HdrCamera.this,
                     mConsumerSurfaces,
                     mCameraHandler);
 
@@ -214,16 +216,22 @@ public class HdrCamera {
         mCameraHandler.post(new Runnable() {
             @Override
             public void run() {
+
+                mPreviewFuseProcessor.stop(); //no longer fuse
+                mCaptureSession.close();
+
+                if(mVideoRecorder != null) {
+                    mVideoRecorder.release();
+                    mVideoRecorder = null;
+                }
+
                 if (mCameraDevice != null) {
                     mCameraDevice.close();
                     mCameraDevice = null;
                 }
 
 
-                if(mVideoRecorder != null) {
-                    mVideoRecorder.release();
-                    mVideoRecorder = null;
-                }
+
             }
         });
     }
@@ -316,12 +324,21 @@ public class HdrCamera {
     public void stopRecording() throws IllegalStateException {
         Log.d(TAG, "trying to stop recording");
         mVideoRecorder.stop();
-        //TODO might need to restart preview
-        /* preview needs to be restarted because stoping the videorecorder will put the
+        /* preview needs to be restarted because stopping the videorecorder will put the
         * used MediaRecorder into the Initialize state, which means no output surface is available.
         * This also means the whole camera surface connection is reset and needs to be built again.
         * essentially we need to do the whole thing that is done when opening the camera*/
-        //TODO restart preview
+        //TODO restart preview in a better way
+        mCaptureSession.close(); //stop camera outputs
+        mPreviewFuseProcessor.stop(); //no longer fuse
+
+        setupSurfaces(); //reconnect surfaces
+
+        //restart session
+        mCaptureSession = new AlternatingSession(HdrCamera.this,
+                mConsumerSurfaces,
+                mCameraHandler);
+
     }
 
 
@@ -338,9 +355,5 @@ public class HdrCamera {
 
     public interface ConfigurePreviewListener{
         public void onOrientationChanged(Size prevSize, int width, int height);
-    }
-
-    private boolean isLandscape(int rotation){
-        return rotation != 0;
     }
 }

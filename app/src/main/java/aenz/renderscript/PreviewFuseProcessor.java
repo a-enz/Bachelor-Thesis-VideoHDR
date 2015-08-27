@@ -71,7 +71,12 @@ public class PreviewFuseProcessor {
         mOutputAllocation.setSurface(output);
     }
 
+    public void stop(){
 
+        mInputAllocation.destroy();
+        mOutputAllocation.destroy();
+        mProcessingThread.quit();
+    }
     /**
      * Simple class to keep track of incoming frame count,
      * and to process the newest one in the processing thread
@@ -110,6 +115,7 @@ public class PreviewFuseProcessor {
                 mProcessingHandler.removeCallbacks(this);
             }
 
+
             // Get to newest input
             for (int i = 0; i < pendingFrames; i++) {
                 mInputAllocation.ioReceive();
@@ -118,7 +124,6 @@ public class PreviewFuseProcessor {
             mFuseScript.set_gFrameCounter(mFrameCounter++);
             mFuseScript.set_gCurrentFrame(mInputAllocation);
 
-            if(mFrameCounter % 15 == 0) Log.d(TAG, "fusing frames");
 
             // Run processing pass
             mFuseScript.forEach_fuseFrames(mPrevAllocation, mOutputAllocation);

@@ -227,4 +227,8 @@ public class AlternatingSession {
             e.printStackTrace();
         }
     }
+
+    public void close(){
+        mCaptureSession.close();
+    }
 }
