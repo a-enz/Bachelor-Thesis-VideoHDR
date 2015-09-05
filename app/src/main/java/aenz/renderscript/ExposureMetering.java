@@ -1,6 +1,7 @@
 package aenz.renderscript;
 
 import android.renderscript.RenderScript;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
@@ -41,6 +42,19 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
         //give estimate depending on some set metrics
         //send estimate to alternatingsession
 
+        int sumEven = 0;
+        for(int i : evenFrameHistogram){
+            sumEven += i;
+        }
+
+        int sumOdd = 0;
+        for(int i : oddFrameHistogram){
+            sumOdd += i;
+        }
+
+        Log.d(TAG,"Histogram pixels counted: " + sumEven + ", " + sumOdd);
+        Log.d(TAG, "Mean values: even: " + sumEven / evenFrameHistogram.length + ", odd: " +
+                                            sumOdd / oddFrameHistogram.length);
 
 
         //mCaptureSession.setAlternatingCapture(); method should end with a call to this

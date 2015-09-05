@@ -7,18 +7,13 @@ package aenz.videohdr;
  * -SurfaceTexture
  */
 
-import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraCharacteristics;
+
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
+import android.renderscript.Allocation;
 import android.util.Log;
 import android.util.Size;
-import android.view.SurfaceHolder;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
 /**
  * Created by andi on 14.07.2015.
@@ -27,14 +22,16 @@ import java.util.List;
  * - Preview Size
  * - Video Size
  */
-public final class VideoSizeConfiguration {
+public class VideoSizeConfiguration {
 
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
-    private static final int MAX_RECORDING_WIDTH = 1080;
+    private static final int MAX_RECORDING_WIDTH = 2048;
+    private static final int MAX_PREVIEW_WIDTH = 1024;
+    private static final int MAX_METERING_WIDTH = 256;
 
-    private static final Class<SurfaceTexture> PREVIEW_CLASS = SurfaceTexture.class;
+    private static final Class<Allocation> RENDERSCRIPT_CLASS = Allocation.class;
 
     private static final Class<MediaRecorder> RECORDER_CLASS = MediaRecorder.class;
 
@@ -47,52 +44,49 @@ public final class VideoSizeConfiguration {
      *
      */
 
-    public static Size choosePreviewSize(CameraCharacteristics characteristics,
-                                         int width,
-                                         int height){
+    public static Size choosePreviewSize(StreamConfigurationMap map){
 
-        width /= 2;
-        height /= 2;
-        StreamConfigurationMap map = characteristics.get(
-                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Size[] choices = map.getOutputSizes(RENDERSCRIPT_CLASS);
 
-        Size[] choices = map.getOutputSizes(PREVIEW_CLASS);
-
-
-        // Collect the supported resolutions that are at least as big as half the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        for (Size option : choices) {
-            if (option.getHeight() == option.getWidth() * ASPECT_RATIO &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
-                bigEnough.add(option);
+        for (Size size : choices) {
+            if (size.getHeight() == size.getWidth() * ASPECT_RATIO && size.getWidth() <= MAX_PREVIEW_WIDTH) {
+                return size;
             }
         }
-
-
-        /*
-        // Pick the smallest of those, assuming we found any
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            Log.e(TAG, "Couldn't find any suitable preview size");
-            return choices[0];
-        }
-        */
-        return choices[17];
+        Log.e(TAG, "Couldn't find any suitable preview size");
+        return choices[choices.length - 1];
     }
 
     /**
      * Choose largest Size according to ASPECT_RATION and MAX_WIDTH
-     * @param characteristics
      * @return
      */
 
-    public static Size chooseVideoSize(CameraCharacteristics characteristics){
-        return null;
-        //TODO recorded video size configuration
+    public static Size chooseVideoSize(StreamConfigurationMap map){
+
+        Size[] choices = map.getOutputSizes(RECORDER_CLASS);
+
+        for (Size size : choices) {
+            if (size.getHeight() == size.getWidth() * ASPECT_RATIO && size.getWidth() <= MAX_RECORDING_WIDTH) {
+                return size;
+            }
+        }
+        Log.e(TAG, "Couldn't find any suitable record size");
+        return choices[choices.length - 1];
     }
 
+    public static Size chooseMeteringSize(StreamConfigurationMap map){
 
+        Size[] choices = map.getOutputSizes(RENDERSCRIPT_CLASS);
+
+        for (Size size : choices) {
+            if (size.getHeight() == size.getWidth() * ASPECT_RATIO && size.getWidth() <= MAX_METERING_WIDTH) {
+                return size;
+            }
+        }
+        Log.e(TAG, "Couldn't find any suitable video size");
+        return choices[choices.length - 1];
+    }
 
     /* UTIL */
 

@@ -1,7 +1,6 @@
 package aenz.videohdr;
 
 import android.app.Activity;
-import android.content.Context;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.net.Uri;

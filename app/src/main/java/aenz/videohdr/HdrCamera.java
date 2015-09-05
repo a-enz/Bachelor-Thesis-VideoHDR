@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.*;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.renderscript.RenderScript;
@@ -47,7 +48,7 @@ public class HdrCamera {
     /* SIZES FOR THE DIFFERENT SURFACES */
     private Size mPreviewSize;
     private Size mRecordSize;
-    private Size mHistogramSize;
+    private Size mMeteringSize;
 
     /* Consumer Surfaces of this camera */
     /* Will probably contain the MediaRecorder surface and several Renderscripts
@@ -182,12 +183,10 @@ public class HdrCamera {
         mPreviewTextureView = previewTexture;
 
         //figure out good preview and recording sizes (and size of histogram input)
-        mPreviewSize = configurePreview(mPreviewTextureView);
-        mRecordSize = mPreviewSize;
-        mHistogramSize = mPreviewSize;
+        chooseOutputSizes();
 
-        //TODO configure also size of recorded video. preview depends on it?
         //first configure the preview texture
+        configurePreview();
 
         /* create VideoRecorder, PreviewFuseProcessor, HistogramProcessor and
             connect their surfaces to camera & preview texture*/
@@ -229,9 +228,6 @@ public class HdrCamera {
                     mCameraDevice.close();
                     mCameraDevice = null;
                 }
-
-
-
             }
         });
     }
@@ -243,27 +239,31 @@ public class HdrCamera {
     /* configure preview size depending on possible texture sizes provided by the camera hardware
     * found in CameraCharacteristics
     * */
-    private Size configurePreview(AutoFitTextureView textureView){
+    private void chooseOutputSizes(){
 
-        //get possible sizes for use with SurfaceTextures
-        Size previewSize = VideoSizeConfiguration.choosePreviewSize(
-                mCameraCharacteristics,
-                textureView.getWidth(),
-                textureView.getHeight());
+        //get possible sizes for use from the camera characteristics
+        StreamConfigurationMap map = mCameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-        Log.d(TAG, "PreviewSize chosen is: " + previewSize);
+        mPreviewSize = VideoSizeConfiguration.choosePreviewSize(map);
+
+        mRecordSize = VideoSizeConfiguration.chooseVideoSize(map);
+
+        mMeteringSize = VideoSizeConfiguration.chooseMeteringSize(map);
+
+    }
+
+    private void configurePreview(){
+        Log.d(TAG, "PreviewSize chosen is: " + mPreviewSize);
 
         int orientation = mAssociatedActivity.getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
+            mPreviewTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         } else {
-            textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
+            mPreviewTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
         }
 
-        Log.d(TAG, "opening configTrans from configPrev with: w=" + textureView.getWidth() + ", h=" + textureView.getHeight());
-        mConfigPreviewListener.onOrientationChanged(previewSize, textureView.getWidth(), textureView.getHeight());
+        mConfigPreviewListener.onOrientationChanged(mPreviewSize, mPreviewTextureView.getWidth(), mPreviewTextureView.getHeight());
 
-        return previewSize;
     }
 
     /**

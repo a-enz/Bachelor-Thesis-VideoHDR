@@ -4,9 +4,6 @@ import android.hardware.camera2.*;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -158,7 +155,6 @@ public class AlternatingSession {
         mCamera = device;
         mConsumerSurfaces = consumers;
         mCameraHandler = cameraHandler;
-
 
 
         createSessionAndCaptureBuilder(); //TODO handle if (creation failed) returns false

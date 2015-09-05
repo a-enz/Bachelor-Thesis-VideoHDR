@@ -77,12 +77,11 @@ public class HistogramProcessor {
 
         //The Histogram renderscript
         mHistogramScript = ScriptIntrinsicHistogram.create(rs,Element.U8_4(rs));
-        //mHistogramScript.setDotCoefficients(r,g,b,a); TODO could be used to change RBG -> Lum conversion
         /* used together with .forEach_Dot()
             presets are: {0.299f, 0.587f, 0,114f,  0.f}
          */
 
-        //output allocation of renderscript TODO can i set that here or do i need to refresh that after every Allocation.iosend()
+        //output allocation of renderscript
         mHistogramScript.setOutput(outputHistogramAllocation);
 
 
@@ -129,7 +128,6 @@ public class HistogramProcessor {
                 mPendingFrames = 0;
 
                 // Discard extra messages in case processing is slower than frame rate
-                //TODO this should be avoided because it may mess up parity of dark/bright frames
                 mProcessingHandler.removeCallbacks(this);
             }
 
@@ -151,8 +149,8 @@ public class HistogramProcessor {
                     outputHistogramAllocation.copyTo(evenFrameHist);
                 } else {
                     outputHistogramAllocation.copyTo(oddFrameHist);
-                    mHistogramListener.onHistogramAvailable(evenFrameHist,
-                            oddFrameHist);
+                    if(mFrameCounter % 15 == 0) mHistogramListener.onHistogramAvailable(evenFrameHist,
+                            oddFrameHist); //TODO rewrite restrictions (testing purposes only)
                 }
 
                 mFrameCounter++;
