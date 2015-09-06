@@ -27,9 +27,9 @@ public class VideoSizeConfiguration {
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
-    private static final int MAX_RECORDING_WIDTH = 2048;
-    private static final int MAX_PREVIEW_WIDTH = 1024;
-    private static final int MAX_METERING_WIDTH = 256;
+    private static final int MAX_RECORDING_WIDTH = 2000;
+    private static final int MAX_PREVIEW_WIDTH = 800;
+    private static final int MAX_METERING_WIDTH = 300;
 
     private static final Class<Allocation> RENDERSCRIPT_CLASS = Allocation.class;
 

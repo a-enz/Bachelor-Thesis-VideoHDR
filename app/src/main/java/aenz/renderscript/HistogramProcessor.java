@@ -30,8 +30,7 @@ public class HistogramProcessor {
      */
     private Allocation inputImageAllocation;
     private Allocation outputHistogramAllocation;
-    private int[] evenFrameHist = new int[EIGHT_BIT_COLOR_SIZE];
-    private int[] oddFrameHist = new int[EIGHT_BIT_COLOR_SIZE];
+    private int[] frameHist = new int[EIGHT_BIT_COLOR_SIZE];
 
     /**
      * Thread for the renderscript execution
@@ -44,7 +43,7 @@ public class HistogramProcessor {
     /**
      * HistogramListener
      */
-    private HistogramProcessorListener mHistogramListener = null;
+    private EventListener mHistogramListener = null;
     /**
      * Script we use
      */
@@ -52,7 +51,7 @@ public class HistogramProcessor {
     private final ScriptIntrinsicHistogram mHistogramScript;
 
 
-    public HistogramProcessor(RenderScript rs, Size inputDimensions, HistogramProcessorListener listener){
+    public HistogramProcessor(RenderScript rs, Size inputDimensions, EventListener listener){
 
         //assign listener
         mHistogramListener = listener;
@@ -140,21 +139,11 @@ public class HistogramProcessor {
 
             //processing pass
             mHistogramScript.forEach(mInputAllocation);
+            outputHistogramAllocation.copyTo(frameHist);
 
-            //copy to int[] //TODO this needs better handling of async threading
-            synchronized (this) { //here we assume the copyTo is called in a synchronized way (FIFO according to forEach invocation)
+            //copy to int[] //
+            if (mFrameCounter++ % 31 == 0 && mHistogramListener != null) mHistogramListener.onHistogramAvailable(frameHist);
 
-                boolean isEvenFrame = mFrameCounter % 2 == 0;
-                if (mHistogramListener != null || isEvenFrame){
-                    outputHistogramAllocation.copyTo(evenFrameHist);
-                } else {
-                    outputHistogramAllocation.copyTo(oddFrameHist);
-                    if(mFrameCounter % 15 == 0) mHistogramListener.onHistogramAvailable(evenFrameHist,
-                            oddFrameHist); //TODO rewrite restrictions (testing purposes only)
-                }
-
-                mFrameCounter++;
-            }
 
         }
     }
@@ -163,7 +152,7 @@ public class HistogramProcessor {
         mHistogramListener = null;
     }
 
-    public interface HistogramProcessorListener{
-        public void onHistogramAvailable(int[] evenFrameHistogram, int[] oddFrameHistogram);
+    public interface EventListener {
+        public void onHistogramAvailable(int[] frameHistogram);
     }
 }

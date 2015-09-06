@@ -16,6 +16,7 @@ import android.view.Surface;
 import java.util.Arrays;
 import java.util.List;
 
+import aenz.renderscript.ExposureMeter;
 import aenz.renderscript.PreviewFuseProcessor;
 
 /**
@@ -54,7 +55,7 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null); //TODO maybe instantiate better elsewhere
+    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null, null); //TODO maybe instantiate better elsewhere
 
     /* Object handling the Video recording of this camera */
     /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
@@ -64,6 +65,10 @@ public class HdrCamera {
 
     //PreviewFuseProcessor in charge of fusing double exposure frames by passing it through a renderscript
     private PreviewFuseProcessor mPreviewFuseProcessor;
+    /*exposure metering object. should persist throughout lifetime of app. but the contained histogramProcessor
+    * needs to be explicitly created/destroyed every time the camera is opened/closed
+    * */
+    private ExposureMeter mExposureMeter;
     //Renderscript object used for two scripts: preview fusion and histogram
     private RenderScript mRS;
 
@@ -87,6 +92,7 @@ public class HdrCamera {
         mAssociatedActivity = activity;
         mManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         mRS = RenderScript.create(activity);
+        mExposureMeter = new ExposureMeter();
 
         //pick an actual camera device: we want a back facing camera with certain capabilities
         createWithCapabilities();
@@ -218,6 +224,7 @@ public class HdrCamera {
 
                 mPreviewFuseProcessor.stop(); //no longer fuse
                 mCaptureSession.close();
+                mExposureMeter.destroyHistogramProcessor();
 
                 if(mVideoRecorder != null) {
                     mVideoRecorder.release();
@@ -296,7 +303,8 @@ public class HdrCamera {
 
 
 
-        //TODO Histogram surface
+        //set up exposure metering with the appropriate histogram input
+        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize,mCaptureSession);
 
 
         //connect output of the fuse script to the preview texture
@@ -306,6 +314,7 @@ public class HdrCamera {
         //connect fusescript, recorder and exposuremetering directly to camera output
         mConsumerSurfaces.set(0, previewFuseSurface);
         mConsumerSurfaces.set(1, recorderSurface);
+        mConsumerSurfaces.set(2, meteringSurface);
         //TODO update mConsumerSurfaces with a third object to make space for histogram
     }
 
@@ -330,7 +339,8 @@ public class HdrCamera {
         * essentially we need to do the whole thing that is done when opening the camera*/
         //TODO restart preview in a better way
         mCaptureSession.close(); //stop camera outputs
-        mPreviewFuseProcessor.stop(); //no longer fuse
+        mPreviewFuseProcessor.stop(); //no longer fuse FIXME might have to do this by destroying renderscript? this way it removes stuff for preview and histogram
+        mExposureMeter.destroyHistogramProcessor();
 
         setupSurfaces(); //reconnect surfaces
 

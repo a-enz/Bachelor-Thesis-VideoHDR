@@ -12,8 +12,8 @@ import aenz.videohdr.AlternatingSession;
  * (ISO and exposure time of bright/dark frame)
  * Created by andi on 13.07.2015.
  */
-public class ExposureMetering implements HistogramProcessor.HistogramProcessorListener {
-    /*
+public class ExposureMeter implements HistogramProcessor.EventListener {
+    /* TODO
     * [x] create histogram processor
     * [ ] connect surfaces
     * [x] subscribe listener to histogram output
@@ -25,7 +25,7 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
     *
     * */
 
-    private static final String TAG = "ExposureMetering";
+    private static final String TAG = "ExposureMeter";
 
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
@@ -33,28 +33,35 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
     //The capture session we want to influence;
     private AlternatingSession mCaptureSession;
 
+    public ExposureMeter(){
+
+    }
+
 
     /* HISTOGRAM EVALUATION METHODS */
-    private void evaluate(int[] evenFrameHistogram, int[] oddFrameHistogram){
+    private void evaluate(int[] frameHistogram){
 
         //check histograms -> maybe evaluate if they are really from dark and bright frame
         //check if if even more over/underexposed than before
         //give estimate depending on some set metrics
         //send estimate to alternatingsession
 
-        int sumEven = 0;
-        for(int i : evenFrameHistogram){
-            sumEven += i;
+
+        int sumColors = 0;
+        int sumPixels = 0;
+        for(int i = 0; i < frameHistogram.length; i ++){
+            sumColors += i * frameHistogram[i];
+            sumPixels += frameHistogram[i];
         }
 
-        int sumOdd = 0;
-        for(int i : oddFrameHistogram){
-            sumOdd += i;
-        }
 
-        Log.d(TAG,"Histogram pixels counted: " + sumEven + ", " + sumOdd);
-        Log.d(TAG, "Mean values: even: " + sumEven / evenFrameHistogram.length + ", odd: " +
-                                            sumOdd / oddFrameHistogram.length);
+        Log.d(TAG, "Mean pixel value: " + sumColors / sumPixels);
+
+        /*TODO
+        * [ ] check if it is bright/dark histogram
+        * [ ] evaluate accordingly, and update recommended values
+        * [ ] run a background job that updates alternatingsessoin periodically*/
+
 
 
         //mCaptureSession.setAlternatingCapture(); method should end with a call to this
@@ -89,8 +96,8 @@ public class ExposureMetering implements HistogramProcessor.HistogramProcessorLi
 
 
     @Override
-    public void onHistogramAvailable(int[] evenFrameHistogram, int[] oddFrameHistogram) {
-        evaluate(evenFrameHistogram, oddFrameHistogram);
+    public void onHistogramAvailable(int[] frameHistogram) {
+        evaluate(frameHistogram);
     }
 
 
