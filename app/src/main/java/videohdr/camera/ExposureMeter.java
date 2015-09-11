@@ -1,11 +1,12 @@
-package aenz.renderscript;
+package videohdr.camera;
 
 import android.renderscript.RenderScript;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import aenz.videohdr.AlternatingSession;
+import videohdr.camera.AlternatingSession;
+import videohdr.renderscript.HistogramProcessor;
 
 /**
  * Evaluates output from Histogram Processor and influences input values to AlternatingSession
@@ -20,7 +21,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     * [ ] react on output by evaluating the histogram
     * [ ] depending on evaluation results and PREVIOUS CaptureRequests values set new values
     * [ ] send new values on to adjust AlternatingSession if the change of values was big enough
-    *
+    * [ ] OPTIONAL: evaluation could be better done on a background thread?
     * !! new histogram processor needed every time camera is reopened (because of surface size)
     *
     * */
@@ -44,7 +45,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         //check histograms -> maybe evaluate if they are really from dark and bright frame
         //check if if even more over/underexposed than before
         //give estimate depending on some set metrics
-        //send estimate to alternatingsession
+        //send estimate to AlternatingSession
 
 
         int sumColors = 0;

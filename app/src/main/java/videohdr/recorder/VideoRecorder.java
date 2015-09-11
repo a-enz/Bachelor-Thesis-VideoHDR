@@ -1,4 +1,4 @@
-package aenz.videohdr;
+package videohdr.recorder;
 
 import android.app.Activity;
 import android.media.MediaRecorder;

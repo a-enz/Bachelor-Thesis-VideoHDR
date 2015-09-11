@@ -1,4 +1,4 @@
-package aenz.videohdr;
+package videohdr.view;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

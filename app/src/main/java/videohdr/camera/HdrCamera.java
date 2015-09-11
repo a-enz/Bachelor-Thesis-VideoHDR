@@ -1,4 +1,4 @@
-package aenz.videohdr;
+package videohdr.camera;
 
 import android.app.Activity;
 import android.content.Context;
@@ -16,8 +16,10 @@ import android.view.Surface;
 import java.util.Arrays;
 import java.util.List;
 
-import aenz.renderscript.ExposureMeter;
-import aenz.renderscript.PreviewFuseProcessor;
+import videohdr.renderscript.PreviewFuseProcessor;
+import videohdr.view.AutoFitTextureView;
+import videohdr.recorder.VideoRecorder;
+import videohdr.recorder.VideoSizeConfiguration;
 
 /**
  * Created by andi on 13.07.2015.

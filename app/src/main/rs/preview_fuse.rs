@@ -1,5 +1,5 @@
 #pragma version(1)
-#pragma rs java_package_name(aenz.renderscript)
+#pragma rs java_package_name(videohdr.renderscript)
 #pragma rs_fp_relaxed //floating point precision relaxed
 
 rs_allocation gCurrentFrame;

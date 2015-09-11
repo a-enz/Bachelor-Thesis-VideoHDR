@@ -1,4 +1,4 @@
-package aenz.videohdr;
+package videohdr.recorder;
 
 /**
  * Helper Class to easily modify Preview and Recording parameters like size (aspect ratio)

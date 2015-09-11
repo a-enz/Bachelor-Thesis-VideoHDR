@@ -1,4 +1,4 @@
-package aenz.videohdr;
+package videohdr.camera;
 
 import android.hardware.camera2.*;
 import android.os.Handler;

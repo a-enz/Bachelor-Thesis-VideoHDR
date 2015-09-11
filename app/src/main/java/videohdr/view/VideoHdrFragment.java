@@ -1,23 +1,21 @@
-package aenz.videohdr;
+package videohdr.view;
 
 import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.media.MediaScannerConnection;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Toast;
+
+import videohdr.camera.HdrCamera;
 
 
 /**
