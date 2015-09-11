@@ -13,6 +13,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
+import java.io.CharArrayReader;
 import java.util.Arrays;
 import java.util.List;
 
@@ -78,6 +79,15 @@ public class HdrCamera {
     private AlternatingSession mCaptureSession;
     //Listener for preview changes made from the camera
     private ConfigurePreviewListener mConfigPreviewListener;
+
+    //possible camera modes
+    public enum CameraState {
+        MODE_FUSE,
+        MODE_UNDEREXPOSE,
+        MODE_OVEREXPOSE,
+        MODE_RECORD
+    }
+    private CameraState mCameraState = CameraState.MODE_FUSE;
 
     /**
      * Creator Method of this class. Instantiate the Camera with desired capabilities like
@@ -320,16 +330,44 @@ public class HdrCamera {
         //TODO update mConsumerSurfaces with a third object to make space for histogram
     }
 
+    public void startUnderexposeSession(){
+        //TODO get some value from exposure meetering
+        mCameraState = CameraState.MODE_UNDEREXPOSE;
+        startSimpleSession(0.f);
+    }
+
+    public void startOverexposeSession(){
+        //TODO get some value from exposure meetering
+        mCameraState = CameraState.MODE_OVEREXPOSE;
+
+        startSimpleSession(1.f);
+    }
+
+    private void startSimpleSession(float someValue){
+        //TODO implement
+    }
+
+    public void startFuseSession(){
+        //TODO implement
+
+        mCameraState = CameraState.MODE_FUSE;
+    }
+
     /* GETTER & SETTER METHODS */
 
     public CameraDevice getCameraDevice(){
         return mCameraDevice;
     }
 
+    public CameraState getmCameraState(){
+        return mCameraState;
+    }
+
     /* RECORDER OPERATION METHODS */
     public void startRecording() throws IllegalStateException {
         Log.d(TAG, "trying to start recording");
         mVideoRecorder.start();
+        mCameraState = CameraState.MODE_RECORD;
     }
 
     public void stopRecording() throws IllegalStateException {
@@ -350,6 +388,8 @@ public class HdrCamera {
         mCaptureSession = new AlternatingSession(HdrCamera.this,
                 mConsumerSurfaces,
                 mCameraHandler);
+
+        mCameraState = CameraState.MODE_FUSE;
 
     }
 

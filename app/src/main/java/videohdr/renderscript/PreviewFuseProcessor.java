@@ -13,6 +13,8 @@ import android.view.Surface;
 /**
  * Mostly copied from HdrViewfinders ViewfinderProcessor class
  * Combined with a renderscript we fuse a double exposure into a single frame
+ * The renderscript tied to this class is called "preview_fuse.rs" and can be found in
+ * ...\app\src\main\rs\
  * Created by andi on 13.07.2015.
  */
 public class PreviewFuseProcessor {

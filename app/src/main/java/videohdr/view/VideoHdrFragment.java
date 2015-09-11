@@ -37,6 +37,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      * Button to start/stop video recording
      */
     private Button mRecordButton;
+    private Button mOverexposeButton;
+    private Button mUnderexposeButton;
 
     private Size mPreviewSize;
 
@@ -130,8 +132,15 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         //set up UI elements
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        mRecordButton = (Button) view.findViewById(R.id.b_video);
+        mRecordButton = (Button) view.findViewById(R.id.b_record);
         mRecordButton.setOnClickListener(this);
+
+        mOverexposeButton = (Button) view.findViewById(R.id.b_overexpose);
+        mOverexposeButton.setOnClickListener(this);
+
+        mUnderexposeButton = (Button) view.findViewById(R.id.b_underexpose);
+        mUnderexposeButton.setOnClickListener(this);
+
     }
 
     @Override
@@ -164,27 +173,84 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      */
     @Override
     public void onClick(View v) {
-        switch(v.getId()){
-            case R.id.b_video:{
-                try{
-                    if(mIsRecording){
-                        mHdrCamera.stopRecording();
-                        mIsRecording = false;
-                        mRecordButton.setText(R.string.record);
-                    }
-                    else{
-                        mHdrCamera.startRecording();
-                        mIsRecording = true;
-                        mRecordButton.setText(R.string.stop);
+        int viewID = v.getId();
 
+        switch(mHdrCamera.getmCameraState()){
+            case MODE_FUSE:{
+                switch (viewID){
+                    case R.id.b_record: {
+                        mHdrCamera.startRecording();
+                        mRecordButton.setText(R.string.stop);
+                        mOverexposeButton.setEnabled(false);
+                        mUnderexposeButton.setEnabled(false);
+                        break;
                     }
-                } catch (IllegalStateException e){
-                    e.printStackTrace();
+                    case R.id.b_underexpose: {
+                        mHdrCamera.startUnderexposeSession();
+                        mUnderexposeButton.setText(R.string.b_text_return);
+                        mRecordButton.setEnabled(false);
+                        break;
+                    }
+                    case R.id.b_overexpose: {
+                        mHdrCamera.startOverexposeSession();
+                        mOverexposeButton.setText(R.string.b_text_return);
+                        mRecordButton.setEnabled(false);
+                        break;
+                    }
+                    default: Log.e(TAG, "Illegal button press during MODE_FUSE");
                 }
                 break;
             }
-
-            default: Log.d(TAG, "onClick Method couldn't recognize view");
+            case MODE_UNDEREXPOSE:{
+                switch (viewID){
+                    case R.id.b_underexpose: {
+                        mHdrCamera.startFuseSession();
+                        mUnderexposeButton.setText(R.string.b_text_underexpose);
+                        mRecordButton.setEnabled(true);
+                        break;
+                    }
+                    case R.id.b_overexpose: {
+                        mHdrCamera.startOverexposeSession();
+                        mOverexposeButton.setText(R.string.b_text_return);
+                        mUnderexposeButton.setText(R.string.b_text_underexpose);
+                        break;
+                    }
+                    default: Log.e(TAG, "Illegal button press during MODE_UNDEREXPOSE");
+                }
+                break;
+            }
+            case MODE_OVEREXPOSE:{
+                switch (viewID){
+                    case R.id.b_underexpose: {
+                        mHdrCamera.startUnderexposeSession();
+                        mUnderexposeButton.setText(R.string.b_text_return);
+                        mOverexposeButton.setText(R.string.b_text_overexpose);
+                        break;
+                    }
+                    case R.id.b_overexpose: {
+                        mHdrCamera.startFuseSession();
+                        mOverexposeButton.setText(R.string.b_text_overexpose);
+                        mRecordButton.setEnabled(true);
+                        break;
+                    }
+                    default: Log.e(TAG, "Illegal button press during MODE_OVEREXPOSE");
+                }
+                break;
+            }
+            case MODE_RECORD:{
+                switch (viewID){
+                    case R.id.b_record: {
+                        mHdrCamera.stopRecording();
+                        mRecordButton.setText(R.string.record);
+                        mUnderexposeButton.setEnabled(true);
+                        mOverexposeButton.setEnabled(true);
+                        break;
+                    }
+                    default: Log.e(TAG, "Illegal button press during MODE_RECORD");
+                }
+                break;
+            }
+            default: Log.e(TAG, "Illegal camera state");
         }
     }
 
