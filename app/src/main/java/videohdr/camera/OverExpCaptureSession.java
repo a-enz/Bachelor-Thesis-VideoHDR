@@ -11,12 +11,11 @@ import java.util.List;
 /**
  * Created by andi on 12.09.2015.
  */
-public class SingleCaptureSession extends SimpleCaptureSession{
-    private static final String TAG = "SingleCapSess";
+public class OverExpCaptureSession extends SimpleCaptureSession{
+    private static final String TAG = "OECapSess";
 
 
     //list of the double exposure capture requests
-    private CaptureRequest mSingleExposure;
 
     /**
      * Creator of this class.
@@ -24,10 +23,10 @@ public class SingleCaptureSession extends SimpleCaptureSession{
      * @param consumers consumer surfaces of captured requests
      * @param cameraHandler background camera thread to handle the requests
      */
-    public SingleCaptureSession(HdrCamera device,
-                                     List<Surface> consumers,
-                                     ExposureMeter meter,
-                                     Handler cameraHandler) {
+    public OverExpCaptureSession(HdrCamera device,
+                                 List<Surface> consumers,
+                                 ExposureMeter meter,
+                                 Handler cameraHandler) {
 
         super(device, consumers, meter, cameraHandler);
     }
@@ -38,29 +37,13 @@ public class SingleCaptureSession extends SimpleCaptureSession{
      * be modified during a session
      */
     protected void setCaptureParameters(ExposureMeter.MeteringValues param){
-        int iso;
-        long exposureDuration;
-        switch(mCamera.getCameraState()){
-            case MODE_OVEREXPOSE: { //overexposing happens in the odd camera Frame
-                iso = param.getOverexposeIso();
-                exposureDuration = param.getOverexposeDuration();
-                break;
-            }
-            case MODE_UNDEREXPOSE: { //underexposing happens in the even camera frame
-                iso = param.getUnderexposeIso();
-                exposureDuration = param.getUnderexposeDuration();
-                break;
-            }
-            default: {
-                Log.e(TAG, "capturing single exposure should not happen in this camera mode");
-                return;
-            }
-        }
+        int iso = param.getOverexposeIso();
+        long exposureDuration = param.getOverexposeDuration();
 
         //evenFrame -> should be the short exposure (darker frame)
         mRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso);
         mRequestBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureDuration);
-        mSingleExposure = mRequestBuilder.build();
+        CaptureRequest mSingleExposure = mRequestBuilder.build();
 
         try {
             mCaptureSession.setRepeatingRequest(mSingleExposure, mCaptureCallback, mCameraHandler);

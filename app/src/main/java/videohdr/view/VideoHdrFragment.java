@@ -352,13 +352,26 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             return;
         }
 
+        /* we need to differentiate between camera modes in this transform:
+            because in MODE_FUSE the preview goes through a renderscript first and
+            somehow the output Surface does not have the same orientation as the direct camera output
+         */
+
+        HdrCamera.CameraState camState = mHdrCamera.getCameraState();
+
         int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 
         Matrix matrix = new Matrix();
 
         RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        //in the following declaration the width and height is switched to account for weird renderscript behaviour :S
-        RectF bufferRect = new RectF(0, 0, mPreviewSize.getWidth(), mPreviewSize.getHeight());
+
+        RectF bufferRect;
+        if(camState == HdrCamera.CameraState.MODE_FUSE){
+            //in the following declaration the width and height is switched to account for weird renderscript behaviour :S
+            bufferRect = new RectF(0, 0, mPreviewSize.getWidth(), mPreviewSize.getHeight());
+        } else {
+            bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        }
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
 
@@ -369,10 +382,16 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 (float) viewWidth / mPreviewSize.getWidth());
         matrix.postScale(scale, scale, centerX, centerY);
 
-        if (Surface.ROTATION_0 == rotation) {
-            matrix.postRotate(90,centerX,centerY);
-        } else if (Surface.ROTATION_270 == rotation) {
-            matrix.postRotate(180, centerX, centerY);
+        if(camState == HdrCamera.CameraState.MODE_FUSE) {
+            if (Surface.ROTATION_0 == rotation) {
+                matrix.postRotate(90, centerX, centerY);
+            } else if (Surface.ROTATION_270 == rotation) {
+                matrix.postRotate(180, centerX, centerY);
+            }
+        } else { //should mean camera is in MODE_UNDEREXPOSE or MODE_OVEREXPOSE
+            if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+                matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+            }
         }
 
         mTextureView.setTransform(matrix);

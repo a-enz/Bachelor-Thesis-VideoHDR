@@ -35,7 +35,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
     protected Handler mCameraHandler;
 
     //associated hardware camera device
-    protected final HdrCamera mCamera;
+    private final HdrCamera mCamera;
 
     private final ExposureMeter mExposureMeter;
 

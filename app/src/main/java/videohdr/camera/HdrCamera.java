@@ -13,6 +13,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,13 +37,11 @@ public class HdrCamera {
     private CameraDevice mCameraDevice;
     private CameraCharacteristics mCameraCharacteristics;
     private String mCameraID;
-    private CameraCaptureSession mCameraSession;
 
     /* THE ACTIVITY USING THE DEVICE */
     private Activity mAssociatedActivity;
 
     /* THREADING FOR CAMERA OPERATIONS */
-    private HandlerThread mCameraThread;
     private Handler mCameraHandler;
 
     /* PREVIEW TEXTURE */
@@ -57,7 +56,7 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null, null);
+    private List<Surface> mConsumerSurfaces;
 
     /* Object handling the Video recording of this camera */
     /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
@@ -109,7 +108,7 @@ public class HdrCamera {
         createWithCapabilities();
 
         //starting camera thread
-        mCameraThread = new HandlerThread("CameraOpsThread");
+        HandlerThread mCameraThread = new HandlerThread("CameraOpsThread");
         mCameraThread.start();
         mCameraHandler = new Handler(mCameraThread.getLooper());
 
@@ -130,7 +129,31 @@ public class HdrCamera {
             * for now we just assume that it is best to reset the values every time the camera is closed and then
             * opened again*/
 
-            startFuseCapture();
+
+            switch(mCameraState){
+                case MODE_FUSE: {
+                    mCaptureSession = new AlternatingCaptureSession(HdrCamera.this,
+                            mConsumerSurfaces,
+                            mExposureMeter,
+                            mCameraHandler);
+                    break;
+                }
+                case MODE_OVEREXPOSE: {
+                    mCaptureSession = new UnderExpCaptureSession(HdrCamera.this,
+                            mConsumerSurfaces,
+                            mExposureMeter,
+                            mCameraHandler);
+                    break;
+                }
+                case MODE_UNDEREXPOSE: {
+                    mCaptureSession = new UnderExpCaptureSession(HdrCamera.this,
+                            mConsumerSurfaces,
+                            mExposureMeter,
+                            mCameraHandler);
+                    break;
+                }
+                default: Log.e(TAG, "in this mode the camera should not be opened");
+            }
 
         }
 
@@ -230,13 +253,15 @@ public class HdrCamera {
             @Override
             public void run() {
 
-                mPreviewFuseProcessor.stop(); //no longer fuse
                 mCaptureSession.close();
-                mExposureMeter.destroyHistogramProcessor();
+                if(mCameraState == CameraState.MODE_FUSE) {
+                    mPreviewFuseProcessor.stop(); //no longer fuse
+                    mExposureMeter.destroyHistogramProcessor();
 
-                if(mVideoRecorder != null) {
-                    mVideoRecorder.release();
-                    mVideoRecorder = null;
+                    if (mVideoRecorder != null) {
+                        mVideoRecorder.release();
+                        mVideoRecorder = null;
+                    }
                 }
 
                 if (mCameraDevice != null) {
@@ -297,58 +322,57 @@ public class HdrCamera {
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         Surface previewSurface = new Surface(texture); //create surface for the textureView
 
-
-
-        //set up PreviewFuseProcessor
-        mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
-        Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
-
-
-
-        //set up the VideoRecorder for the correct size and orientation of captured frames
-        mVideoRecorder = new VideoRecorder(mAssociatedActivity, rotation, mRecordSize);
-        Surface recorderSurface = mVideoRecorder.getRecorderSurface();
-
-
-
         //set up exposure metering with the appropriate histogram input
-        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize,mCaptureSession);
+        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize,mCaptureSession); //FIXME mCaptureSession is null at this time
+
+        mConsumerSurfaces = new ArrayList<>();
+        if(mCameraState == CameraState.MODE_FUSE) {
+            //set up PreviewFuseProcessor
+            mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
+            Surface previewFuseSurface = mPreviewFuseProcessor.getInputSurface();
 
 
-        //connect output of the fuse script to the preview texture
-        mPreviewFuseProcessor.setOutputSurface(previewSurface);
+            //set up the VideoRecorder for the correct size and orientation of captured frames
+            mVideoRecorder = new VideoRecorder(mAssociatedActivity, rotation, mRecordSize);
+            Surface recorderSurface = mVideoRecorder.getRecorderSurface();
 
-        //connect fusescript, recorder and exposuremetering directly to camera output
-        mConsumerSurfaces.set(0, previewFuseSurface);
-        mConsumerSurfaces.set(1, recorderSurface);
-        mConsumerSurfaces.set(2, meteringSurface);
+            //connect output of the fuse script to the preview texture
+            mPreviewFuseProcessor.setOutputSurface(previewSurface);
+
+            mConsumerSurfaces.add(previewFuseSurface);
+            mConsumerSurfaces.add(recorderSurface);
+        } else { //we should have MODE_OVEREXPOSE or MODE_UNDEREXPOSE, feed directly to preview
+            mConsumerSurfaces.add(previewSurface);
+        }
+        mConsumerSurfaces.add(meteringSurface);
     }
 
     public void startUnderexposeCapture(){
-        //TODO get some value from exposure metering
         mCameraState = CameraState.MODE_UNDEREXPOSE;
-        startSimpleCapture(0.f);
+        setupSurfaces();
+        mCaptureSession = new UnderExpCaptureSession(HdrCamera.this,
+                mConsumerSurfaces,
+                mExposureMeter,
+                mCameraHandler);
     }
 
     public void startOverexposeCapture(){
-        //TODO get some value from exposure metering
         mCameraState = CameraState.MODE_OVEREXPOSE;
-
-        startSimpleCapture(1.f);
-    }
-
-    private void startSimpleCapture(float someValue){
-        //TODO implement
+        setupSurfaces();
+        mCaptureSession = new OverExpCaptureSession(HdrCamera.this,
+                mConsumerSurfaces,
+                mExposureMeter,
+                mCameraHandler);
     }
 
     public void startFuseCapture(){
-        //TODO implement
+        mCameraState = CameraState.MODE_FUSE;
+        setupSurfaces();
         mCaptureSession = new AlternatingCaptureSession(HdrCamera.this,
                 mConsumerSurfaces,
                 mExposureMeter,
                 mCameraHandler);
 
-        mCameraState = CameraState.MODE_FUSE;
     }
 
     /* GETTER & SETTER METHODS */
@@ -380,6 +404,8 @@ public class HdrCamera {
         mPreviewFuseProcessor.stop(); //no longer fuse FIXME might have to do this by destroying renderscript? this way it removes stuff for preview and histogram
         mExposureMeter.destroyHistogramProcessor();
 
+        mCameraState = CameraState.MODE_FUSE;
+
         setupSurfaces(); //reconnect surfaces
 
         //restart session
@@ -388,7 +414,6 @@ public class HdrCamera {
                 mExposureMeter,
                 mCameraHandler);
 
-        mCameraState = CameraState.MODE_FUSE;
 
     }
 
