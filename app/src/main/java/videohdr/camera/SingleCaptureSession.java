@@ -65,7 +65,7 @@ public class SingleCaptureSession extends SimpleCaptureSession{
         try {
             mCaptureSession.setRepeatingRequest(mSingleExposure, mCaptureCallback, mCameraHandler);
         } catch (CameraAccessException e) {
-            Log.d(TAG, "FAILED setRepeatingBurst");
+            Log.d(TAG, "FAILED setRepeating");
             e.printStackTrace();
         }
     }
