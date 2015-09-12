@@ -17,21 +17,8 @@ import java.util.List;
  * Later on only parameters for frame exposure should be changed (like iso, exposure time)
  * Created by andi on 14.08.2015.
  */
-public class AlternatingSession {
+public class AlternatingSession implements ExposureMeter.EventListener{
     private static final String TAG = "AlternatingSession";
-
-    //timing constants
-    private static final long MICRO_SECOND = 1000;
-    private static final long MILLI_SECOND = MICRO_SECOND * 1000;
-    private static final long ONE_SECOND = MILLI_SECOND * 1000;
-
-    public static final long FRAME_DURATION = ONE_SECOND / 30; //has to be accessible from exposure metering
-
-    //initial exposure time and iso
-    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 150;
-    private static final int INITIAL_ODD_ISO = 120;
-    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 30;
-    private static final int INITIAL_EVEN_ISO = 120;
 
     /*The associated CameraCaptureSession. Should not change, or else we need to create
     a new AlternatingSession as well */
@@ -54,6 +41,8 @@ public class AlternatingSession {
     //associated hardware camera device
     private final HdrCamera mCamera;
 
+    private final ExposureMeter mExposureMeter;
+
 
     /**
      * State Callback for the Capture Session
@@ -74,14 +63,9 @@ public class AlternatingSession {
                     //TODO maybe more settings here are needed for the whole session
                     mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
 
+                    ExposureMeter.MeteringValues param = mExposureMeter.getMeteringValues();
 
-                    /* after configuration start of with some initial values */
-                    //TODO would probably be better to remember values from previous open camera
-                    /* since the brightness and such should not have changed that much?*/
-                    setAlternatingCapture(INITIAL_EVEN_ISO,
-                            INITIAL_ODD_ISO,
-                            INITIAL_EVEN_EXPOSURE,
-                            INITIAL_ODD_EXPOSURE);
+                    setAlternatingCapture(param);
 
                 }
 
@@ -150,11 +134,14 @@ public class AlternatingSession {
      */
     public AlternatingSession(HdrCamera device,
                               List<Surface> consumers,
+                              ExposureMeter meter,
                               Handler cameraHandler) {
 
         mCamera = device;
         mConsumerSurfaces = consumers;
+        mExposureMeter = meter;
         mCameraHandler = cameraHandler;
+
 
 
         createSessionAndCaptureBuilder(); //TODO handle if (creation failed) returns false
@@ -192,16 +179,15 @@ public class AlternatingSession {
     /**
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
-     * @param evenIso value for the even frame: between 80 and 1200?
-     * @param oddIso value for the odd frame: between 80 and 1200?
-     * @param mEvenExposure value in milliseconds. should not be larger than FRAME_DURATION
-     * @param mOddExposure value in milliseconds. should not be larger than FRAME_DURATION //TODO where to check for that. probably in Exposure Metering
      */
-    private void setAlternatingCapture(int evenIso, int oddIso,
-                                      long mEvenExposure, long mOddExposure){
+    private void setAlternatingCapture(ExposureMeter.MeteringValues param){
 
+        int evenIso = param.getEvenIso();
+        int oddIso = param.getOddIso();
+        long mEvenExposure = param.getEvenDuration();
+        long mOddExposure = param.getOddDuration();
 
-        mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, FRAME_DURATION);
+        mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, ExposureMeter.FRAME_DURATION);
 
         //evenFrame -> should be the short exposure (darker frame)
         mRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, evenIso);
@@ -226,5 +212,10 @@ public class AlternatingSession {
 
     public void close(){
         mCaptureSession.close();
+    }
+
+    @Override
+    public void onMeterEvent(ExposureMeter.MeteringValues param) {
+        setAlternatingCapture(param);
     }
 }

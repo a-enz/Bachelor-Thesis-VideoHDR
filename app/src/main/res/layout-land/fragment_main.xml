@@ -27,7 +27,7 @@
             android:id="@+id/b_overexpose"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
+            android:layout_gravity="top"
             android:text="@string/b_text_overexpose" />
 
         <Button
@@ -41,7 +41,7 @@
             android:id="@+id/b_underexpose"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top"
+            android:layout_gravity="bottom"
             android:text="@string/b_text_underexpose" />
 
     </FrameLayout>

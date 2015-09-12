@@ -1,11 +1,10 @@
 package videohdr.camera;
 
+import android.app.usage.UsageEvents;
 import android.renderscript.RenderScript;
-import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import videohdr.camera.AlternatingSession;
 import videohdr.renderscript.HistogramProcessor;
 
 /**
@@ -28,14 +27,35 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     private static final String TAG = "ExposureMeter";
 
+    //timing constants
+    private static final long MICRO_SECOND = 1000;
+    private static final long MILLI_SECOND = MICRO_SECOND * 1000;
+    private static final long ONE_SECOND = MILLI_SECOND * 1000;
+
+    public static final long FRAME_DURATION = ONE_SECOND / 30; //has to be accessible from exposure metering
+
+    //initial exposure time and iso
+    private static final int INITIAL_EVEN_ISO = 120;
+    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 30;
+    private static final int INITIAL_ODD_ISO = 120;
+    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 150;
+
+    //the metering values
+    private MeteringValues currentMeteringValues;
+
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
 
     //The capture session we want to influence;
-    private AlternatingSession mCaptureSession;
+    private EventListener mCaptureSession;
 
     public ExposureMeter(){
-
+        synchronized (this){
+            currentMeteringValues = new MeteringValues(INITIAL_EVEN_ISO,
+                                                        INITIAL_EVEN_EXPOSURE,
+                                                        INITIAL_ODD_ISO,
+                                                        INITIAL_ODD_EXPOSURE);
+        }
     }
 
 
@@ -65,7 +85,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
 
-        //mCaptureSession.setAlternatingCapture(); method should end with a call to this
+        //mCaptureSession.onMeterEvent(null, null);
     }
 
 
@@ -80,7 +100,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      * @param inputSize input size of the frames
      * @return the input surface for the HistogramProcessor
      */
-    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize, AlternatingSession captureSession){
+    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize, EventListener captureSession){
         mCaptureSession = captureSession; //TODO delete this and create a listener that checks on exposure meter events
         mHistProc = new HistogramProcessor(rs,inputSize, this);
         return mHistProc.getInputSurface();
@@ -102,14 +122,57 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     }
 
 
-    //Listener Interface to Inform subscribers that the Exposure Parameters have changed
-    public interface EventListener {
-        void onBothExposeChanged();
-        void onUnderExposeChanged();
-        void onOverExposeChanged();
+    /* GETTER & SETTER */
+    public MeteringValues getMeteringValues(){
+        synchronized (this){
+            MeteringValues res = currentMeteringValues;
+        }
+        return currentMeteringValues;
     }
 
 
-    /* HELPER METHODS */
+
+    /* HELPER METHODS AND CLASSES*/
+
+    //Listener Interface to Inform subscribers that the Exposure Parameters have changed
+    public interface EventListener {
+        /**
+         *
+         * @param param contains iso and duration of over and underexposure
+         */
+        void onMeterEvent(MeteringValues param);
+    }
+
+    public class MeteringValues{
+        private int evenIso;
+        private long evenDuration;
+        private int oddIso;
+        private long oddDuration;
+
+        public MeteringValues(int eIso, long eDuration, int oIso, long oDuration){
+            evenIso = eIso;
+            evenDuration = eDuration;
+
+            oddIso = oIso;
+            oddDuration = oDuration;
+        }
+
+
+        public int getEvenIso() {
+            return evenIso;
+        }
+
+        public long getEvenDuration() {
+            return evenDuration;
+        }
+
+        public int getOddIso() {
+            return oddIso;
+        }
+
+        public long getOddDuration() {
+            return oddDuration;
+        }
+    }
 
 }

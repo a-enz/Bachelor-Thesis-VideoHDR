@@ -27,7 +27,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
     public static final String TAG = "VideoHdrFragment";
 
-
+    //identifiers for the button states needed for saving /restoring the view
+    private static final String BUTTON_RECORD_TEXT = "b.record.text";
+    private static final String BUTTON_UNDEREXP_TEXT = "b.ue.text";
+    private static final String BUTTON_OVEREXP_TEXT = "b.oe.text";
+    private static final String BUTTON_RECORD_ENABLED = "b.record.active";
+    private static final String BUTTON_UNDEREXP_ENABLED = "b.ue.active";
+    private static final String BUTTON_OVEREXP_ENABLED = "b.oe.active";
 
     /* UI FIELDS*/
     /**
@@ -145,6 +151,18 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         mUnderexposeButton = (Button) view.findViewById(R.id.b_underexpose);
         mUnderexposeButton.setOnClickListener(this);
 
+        if(savedInstanceState != null){
+            Log.d(TAG, "restoring button states");
+            mRecordButton.setEnabled(savedInstanceState.getBoolean(BUTTON_RECORD_ENABLED));
+            mOverexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_OVEREXP_ENABLED));
+            mUnderexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_UNDEREXP_ENABLED));
+
+            mRecordButton.setText(savedInstanceState.getCharSequence(BUTTON_RECORD_TEXT));
+            mOverexposeButton.setText(savedInstanceState.getCharSequence(BUTTON_OVEREXP_TEXT));
+            mUnderexposeButton.setText(savedInstanceState.getCharSequence(BUTTON_UNDEREXP_TEXT));
+        }
+
+
     }
 
     @Override
@@ -165,6 +183,22 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         mHdrCamera.closeCamera();
         Log.d(TAG, "onPause: CAMERA is closed");
         super.onPause();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        Log.d(TAG, "saving button states");
+        //save enabled state
+        outState.putBoolean(BUTTON_RECORD_ENABLED, mRecordButton.isEnabled());
+        outState.putBoolean(BUTTON_OVEREXP_ENABLED, mOverexposeButton.isEnabled());
+        outState.putBoolean(BUTTON_UNDEREXP_ENABLED, mUnderexposeButton.isEnabled());
+
+        //save text state
+        outState.putCharSequence(BUTTON_RECORD_TEXT, mRecordButton.getText());
+        outState.putCharSequence(BUTTON_OVEREXP_TEXT, mOverexposeButton.getText());
+        outState.putCharSequence(BUTTON_UNDEREXP_TEXT, mUnderexposeButton.getText());
+
+        super.onSaveInstanceState(outState);
     }
 
     //Listener for scroll events so that we can manually adjust over/underexpose parameters

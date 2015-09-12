@@ -345,6 +345,7 @@ public class HdrCamera {
         //TODO implement
         mCaptureSession = new AlternatingSession(HdrCamera.this,
                 mConsumerSurfaces,
+                mExposureMeter,
                 mCameraHandler);
 
         mCameraState = CameraState.MODE_FUSE;
@@ -384,6 +385,7 @@ public class HdrCamera {
         //restart session
         mCaptureSession = new AlternatingSession(HdrCamera.this,
                 mConsumerSurfaces,
+                mExposureMeter,
                 mCameraHandler);
 
         mCameraState = CameraState.MODE_FUSE;
