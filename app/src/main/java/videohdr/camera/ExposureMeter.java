@@ -56,7 +56,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         }
 
 
-        Log.d(TAG, "Mean pixel value: " + sumColors / sumPixels);
+        //Log.d(TAG, "Mean pixel value: " + sumColors / sumPixels);
 
         /*TODO
         * [ ] check if it is bright/dark histogram
@@ -81,7 +81,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      * @return the input surface for the HistogramProcessor
      */
     public Surface setupHistogramProcessor(RenderScript rs, Size inputSize, AlternatingSession captureSession){
-        mCaptureSession = captureSession;
+        mCaptureSession = captureSession; //TODO delete this and create a listener that checks on exposure meter events
         mHistProc = new HistogramProcessor(rs,inputSize, this);
         return mHistProc.getInputSurface();
     }
@@ -102,7 +102,12 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     }
 
 
-
+    //Listener Interface to Inform subscribers that the Exposure Parameters have changed
+    public interface EventListener {
+        void onBothExposeChanged();
+        void onUnderExposeChanged();
+        void onOverExposeChanged();
+    }
 
 
     /* HELPER METHODS */

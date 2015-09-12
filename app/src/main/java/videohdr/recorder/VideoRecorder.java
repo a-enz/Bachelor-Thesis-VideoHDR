@@ -45,7 +45,7 @@ public class VideoRecorder {
 
     /* File storage and naming, timestamp added later on */
     private static final File directoryPath = Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DCIM + "/Camera/"); //TODO after storing rename with timestamp or something
+            Environment.DIRECTORY_DCIM + "/Camera/");
     private static final File tempVideoFile = new File(directoryPath,"tmp.mp4");
 
     public VideoRecorder (Activity activity, int rotation, Size recorderSize){

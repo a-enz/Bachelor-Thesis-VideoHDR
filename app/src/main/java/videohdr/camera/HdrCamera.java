@@ -13,7 +13,6 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import java.io.CharArrayReader;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,13 +57,13 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null, null); //TODO maybe instantiate better elsewhere
+    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null, null);
 
     /* Object handling the Video recording of this camera */
     /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
      * the second time a VideoRecorder is created MediaRecorder.prepare() fails. this occurs usually
      * after tilting the phone after a preview can be seen */
-    private VideoRecorder mVideoRecorder; //TODO reactive and initialize with proper video sizes (StreamconfigurationMatp)
+    private VideoRecorder mVideoRecorder;
 
     //PreviewFuseProcessor in charge of fusing double exposure frames by passing it through a renderscript
     private PreviewFuseProcessor mPreviewFuseProcessor;
@@ -131,10 +130,7 @@ public class HdrCamera {
             * for now we just assume that it is best to reset the values every time the camera is closed and then
             * opened again*/
 
-            //TODO later on this will probably be a global object since we need to access setter method from histogram/exposure metering
-            mCaptureSession = new AlternatingSession(HdrCamera.this,
-                    mConsumerSurfaces,
-                    mCameraHandler);
+            startFuseCapture();
 
         }
 
@@ -321,34 +317,35 @@ public class HdrCamera {
 
         //connect output of the fuse script to the preview texture
         mPreviewFuseProcessor.setOutputSurface(previewSurface);
-        /* TODO maybe the consumer surfaces should differ between 'just preview' and 'preview & recording'*/
 
         //connect fusescript, recorder and exposuremetering directly to camera output
         mConsumerSurfaces.set(0, previewFuseSurface);
         mConsumerSurfaces.set(1, recorderSurface);
         mConsumerSurfaces.set(2, meteringSurface);
-        //TODO update mConsumerSurfaces with a third object to make space for histogram
     }
 
-    public void startUnderexposeSession(){
-        //TODO get some value from exposure meetering
+    public void startUnderexposeCapture(){
+        //TODO get some value from exposure metering
         mCameraState = CameraState.MODE_UNDEREXPOSE;
-        startSimpleSession(0.f);
+        startSimpleCapture(0.f);
     }
 
-    public void startOverexposeSession(){
-        //TODO get some value from exposure meetering
+    public void startOverexposeCapture(){
+        //TODO get some value from exposure metering
         mCameraState = CameraState.MODE_OVEREXPOSE;
 
-        startSimpleSession(1.f);
+        startSimpleCapture(1.f);
     }
 
-    private void startSimpleSession(float someValue){
+    private void startSimpleCapture(float someValue){
         //TODO implement
     }
 
-    public void startFuseSession(){
+    public void startFuseCapture(){
         //TODO implement
+        mCaptureSession = new AlternatingSession(HdrCamera.this,
+                mConsumerSurfaces,
+                mCameraHandler);
 
         mCameraState = CameraState.MODE_FUSE;
     }
@@ -359,7 +356,7 @@ public class HdrCamera {
         return mCameraDevice;
     }
 
-    public CameraState getmCameraState(){
+    public CameraState getCameraState(){
         return mCameraState;
     }
 
@@ -406,6 +403,6 @@ public class HdrCamera {
     }
 
     public interface ConfigurePreviewListener{
-        public void onOrientationChanged(Size prevSize, int width, int height);
+        void onOrientationChanged(Size prevSize, int width, int height);
     }
 }

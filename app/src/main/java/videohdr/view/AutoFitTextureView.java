@@ -1,7 +1,10 @@
 package videohdr.view;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 
@@ -15,6 +18,8 @@ public class AutoFitTextureView extends TextureView{
 
     private int mRatioWidth = 0;
     private int mRatioHeight = 0;
+
+    private GestureDetector mGestureDetector;
 
     public AutoFitTextureView(Context context) {
         this(context, null);
@@ -61,4 +66,13 @@ public class AutoFitTextureView extends TextureView{
         }
     }
 
+    @Override
+    public boolean onTouchEvent (MotionEvent event){
+        return mGestureDetector != null && mGestureDetector.onTouchEvent(event);
+    }
+
+    public void setGestureListener(Context context, GestureDetector.OnGestureListener listener) {
+        if(listener == null) mGestureDetector = null;
+        else mGestureDetector = new GestureDetector(context, listener);
+    }
 }

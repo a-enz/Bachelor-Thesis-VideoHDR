@@ -20,7 +20,7 @@
         android:layout_alignParentTop="true"
         android:layout_below="@id/texture"
         android:layout_toRightOf="@id/texture"
-        android:background="#3df478"
+        android:background="#151730"
         android:orientation="horizontal">
 
         <Button

@@ -197,7 +197,7 @@ public class AlternatingSession {
      * @param mEvenExposure value in milliseconds. should not be larger than FRAME_DURATION
      * @param mOddExposure value in milliseconds. should not be larger than FRAME_DURATION //TODO where to check for that. probably in Exposure Metering
      */
-    public void setAlternatingCapture(int evenIso, int oddIso,
+    private void setAlternatingCapture(int evenIso, int oddIso,
                                       long mEvenExposure, long mOddExposure){
 
 

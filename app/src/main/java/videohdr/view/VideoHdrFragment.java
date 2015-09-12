@@ -8,7 +8,9 @@ import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -53,7 +55,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
 
-            mHdrCamera.openCamera(mTextureView); //TODO provide also preview surface
+            mHdrCamera.openCamera(mTextureView);
             /*all other surfaces should be created from HdrCamera*/
             Log.d(TAG, "onSurfaceTextureAvailable: CAMERA open");
             //mHdrCamera.configurePreview(mTextureView, width, height); not here!
@@ -132,6 +134,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         //set up UI elements
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+        mTextureView.setGestureListener(getActivity(), mViewListener);
+
         mRecordButton = (Button) view.findViewById(R.id.b_record);
         mRecordButton.setOnClickListener(this);
 
@@ -163,6 +167,49 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         super.onPause();
     }
 
+    //Listener for scroll events so that we can manually adjust over/underexpose parameters
+    private GestureDetector.OnGestureListener mViewListener
+            = new GestureDetector.SimpleOnGestureListener() {
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return true;
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            return true;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            HdrCamera.CameraState camState = mHdrCamera.getCameraState();
+            if(camState == HdrCamera.CameraState.MODE_UNDEREXPOSE
+                    || camState == HdrCamera.CameraState.MODE_OVEREXPOSE) {
+
+                float height = mTextureView.getHeight();
+
+                float yDistNorm = distanceY / height;
+
+                final float ACCELERATION_FACTOR = 8;
+                double scaleFactor = Math.pow(2.f, yDistNorm * ACCELERATION_FACTOR);
+                Log.d(TAG, "scaling by factor: " + scaleFactor);
+                switch(camState){
+                    case MODE_UNDEREXPOSE:{
+                        mHdrCamera.startUnderexposeCapture();
+                        break;
+                    }
+                    case MODE_OVEREXPOSE: {
+                        mHdrCamera.startOverexposeCapture();
+                        break;
+                    }
+                    default: Log.e(TAG, "this can't happen");
+                }
+            }
+            return true;
+        }
+    };
+
 
     /**
      * Only one button is available right now, record start/stop. Here the recording should
@@ -175,7 +222,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onClick(View v) {
         int viewID = v.getId();
 
-        switch(mHdrCamera.getmCameraState()){
+        switch(mHdrCamera.getCameraState()){
             case MODE_FUSE:{
                 switch (viewID){
                     case R.id.b_record: {
@@ -186,13 +233,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                         break;
                     }
                     case R.id.b_underexpose: {
-                        mHdrCamera.startUnderexposeSession();
+                        mHdrCamera.startUnderexposeCapture();
                         mUnderexposeButton.setText(R.string.b_text_return);
                         mRecordButton.setEnabled(false);
                         break;
                     }
                     case R.id.b_overexpose: {
-                        mHdrCamera.startOverexposeSession();
+                        mHdrCamera.startOverexposeCapture();
                         mOverexposeButton.setText(R.string.b_text_return);
                         mRecordButton.setEnabled(false);
                         break;
@@ -204,13 +251,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             case MODE_UNDEREXPOSE:{
                 switch (viewID){
                     case R.id.b_underexpose: {
-                        mHdrCamera.startFuseSession();
+                        mHdrCamera.startFuseCapture();
                         mUnderexposeButton.setText(R.string.b_text_underexpose);
                         mRecordButton.setEnabled(true);
                         break;
                     }
                     case R.id.b_overexpose: {
-                        mHdrCamera.startOverexposeSession();
+                        mHdrCamera.startOverexposeCapture();
                         mOverexposeButton.setText(R.string.b_text_return);
                         mUnderexposeButton.setText(R.string.b_text_underexpose);
                         break;
@@ -222,13 +269,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             case MODE_OVEREXPOSE:{
                 switch (viewID){
                     case R.id.b_underexpose: {
-                        mHdrCamera.startUnderexposeSession();
+                        mHdrCamera.startUnderexposeCapture();
                         mUnderexposeButton.setText(R.string.b_text_return);
                         mOverexposeButton.setText(R.string.b_text_overexpose);
                         break;
                     }
                     case R.id.b_overexpose: {
-                        mHdrCamera.startFuseSession();
+                        mHdrCamera.startFuseCapture();
                         mOverexposeButton.setText(R.string.b_text_overexpose);
                         mRecordButton.setEnabled(true);
                         break;

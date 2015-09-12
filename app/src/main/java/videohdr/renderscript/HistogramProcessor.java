@@ -153,6 +153,6 @@ public class HistogramProcessor {
     }
 
     public interface EventListener {
-        public void onHistogramAvailable(int[] frameHistogram);
+        void onHistogramAvailable(int[] frameHistogram);
     }
 }

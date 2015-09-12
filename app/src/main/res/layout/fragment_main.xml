@@ -17,7 +17,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:layout_below="@id/texture"
-        android:background="#3df478">
+        android:background="#151730">
 
         <Button
             android:id="@+id/b_overexpose"
