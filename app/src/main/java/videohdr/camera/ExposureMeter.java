@@ -1,6 +1,5 @@
 package videohdr.camera;
 
-import android.app.usage.UsageEvents;
 import android.renderscript.RenderScript;
 import android.util.Size;
 import android.view.Surface;
@@ -144,34 +143,34 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     }
 
     public class MeteringValues{
-        private int evenIso;
-        private long evenDuration;
-        private int oddIso;
-        private long oddDuration;
+        private int underexposeIso;
+        private long underexposeDuration;
+        private int overexposeIso;
+        private long overexposeDuration;
 
-        public MeteringValues(int eIso, long eDuration, int oIso, long oDuration){
-            evenIso = eIso;
-            evenDuration = eDuration;
+        public MeteringValues(int uIso, long uDuration, int oIso, long oDuration){
+            underexposeIso = uIso;
+            underexposeDuration = uDuration;
 
-            oddIso = oIso;
-            oddDuration = oDuration;
+            overexposeIso = oIso;
+            overexposeDuration = oDuration;
         }
 
 
-        public int getEvenIso() {
-            return evenIso;
+        public int getUnderexposeIso() {
+            return underexposeIso;
         }
 
-        public long getEvenDuration() {
-            return evenDuration;
+        public long getUnderexposeDuration() {
+            return underexposeDuration;
         }
 
-        public int getOddIso() {
-            return oddIso;
+        public int getOverexposeIso() {
+            return overexposeIso;
         }
 
-        public long getOddDuration() {
-            return oddDuration;
+        public long getOverexposeDuration() {
+            return overexposeDuration;
         }
     }
 

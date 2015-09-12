@@ -17,114 +17,11 @@ import java.util.List;
  * Later on only parameters for frame exposure should be changed (like iso, exposure time)
  * Created by andi on 14.08.2015.
  */
-public class AlternatingCaptureSession implements ExposureMeter.EventListener{
-    private static final String TAG = "AlternatingCaptureSession";
-
-    /*The associated CameraCaptureSession. Should not change, or else we need to create
-    a new AlternatingCaptureSession as well */
-    private CameraCaptureSession mCaptureSession;
-
-    /*builder for the camera device we are using for the alternating session preview
-      or the record request, depending on how the AlternatingCaptureSession was created (isRecording)
-     */
-    private CaptureRequest.Builder mRequestBuilder;
+public class AlternatingCaptureSession extends SimpleCaptureSession {
+    private static final String TAG = "AlternatingCapSess";
 
     //list of the double exposure capture requests
     private List<CaptureRequest> mDoubleExposure = Arrays.asList(null,null);
-
-    //consumer surfaces of this alternating session
-    private List<Surface> mConsumerSurfaces;
-
-    //handler to background thread to process camera operations on
-    private Handler mCameraHandler;
-
-    //associated hardware camera device
-    private final HdrCamera mCamera;
-
-    private final ExposureMeter mExposureMeter;
-
-
-    /**
-     * State Callback for the Capture Session
-     */
-    private final CameraCaptureSession.StateCallback mStateCallback =
-            new CameraCaptureSession.StateCallback() {
-
-                @Override
-                public void onConfigured(CameraCaptureSession session) {
-                    /* we assume this is only called when camera is opened */
-                    mCaptureSession = session;
-                    //add consumer surfaces to builder
-                    for(Surface surface : mConsumerSurfaces){
-                        mRequestBuilder.addTarget(surface);
-                    }
-
-                    //set auto exposure mode to off, otherwise we can't do manual double exposure
-                    //TODO maybe more settings here are needed for the whole session
-                    mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
-
-                    ExposureMeter.MeteringValues param = mExposureMeter.getMeteringValues();
-
-                    setAlternatingCapture(param);
-
-                }
-
-                @Override
-                public void onConfigureFailed(CameraCaptureSession session) {
-                    /* this is called if the surfaces contain unsupported sizes (as defined by
-                     StreamconfigurationMap.getoutputSizes(SurfaceHolder.class)) or too many target surfaces
-                     are provided.
-                     */
-
-                    Log.d(TAG, "onConfigureFailed");
-                    mCamera.closeCamera();
-
-
-                }
-            };
-
-
-    /**
-     * CaptureCallback. What happens with captured results. Only the Meta Info of sensor capture contained
-     * in CaptureResult objects is accessible.
-     */
-    private final CameraCaptureSession.CaptureCallback mCaptureCallback =
-            new CameraCaptureSession.CaptureCallback() {
-
-                /*
-                @Override
-                public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request, long timestamp, long frameNumber) {
-                    super.onCaptureStarted(session, request, timestamp, frameNumber);
-                }
-
-                @Override
-                public void onCaptureProgressed(CameraCaptureSession session, CaptureRequest request, CaptureResult partialResult) {
-                    super.onCaptureProgressed(session, request, partialResult);
-                }
-                */
-                @Override
-                public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-                    super.onCaptureCompleted(session, request, result);
-                    //TODO here we could access meta information of the frames of TotalCaptureResult
-                }
-
-                /*
-                @Override
-                public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
-                    super.onCaptureFailed(session, request, failure);
-                }
-
-                @Override
-                public void onCaptureSequenceCompleted(CameraCaptureSession session, int sequenceId, long frameNumber) {
-                    super.onCaptureSequenceCompleted(session, sequenceId, frameNumber);
-                }
-
-                @Override
-                public void onCaptureSequenceAborted(CameraCaptureSession session, int sequenceId) {
-                    super.onCaptureSequenceAborted(session, sequenceId);
-                }
-                */
-            };
 
     /**
      * Creator of this class.
@@ -137,42 +34,7 @@ public class AlternatingCaptureSession implements ExposureMeter.EventListener{
                                      ExposureMeter meter,
                                      Handler cameraHandler) {
 
-        mCamera = device;
-        mConsumerSurfaces = consumers;
-        mExposureMeter = meter;
-        mCameraHandler = cameraHandler;
-
-
-
-        createSessionAndCaptureBuilder(); //TODO handle if (creation failed) returns false
-    }
-
-    /**
-     * initialize CameraCaptureSession and CaptureRequest.Builder objects for this session
-     * @return success
-     */
-    private boolean createSessionAndCaptureBuilder(){
-
-        try {
-            mCamera.getCameraDevice().createCaptureSession(mConsumerSurfaces, mStateCallback, mCameraHandler);
-        } catch (CameraAccessException e) {
-            Log.d(TAG, "FAILED createCaptureSession");
-            e.printStackTrace();
-            mCamera.closeCamera();
-        }
-
-
-        try {
-            /*TODO maybe we should separate this part below from createSessionAndCaptureBuilder and make two different methods*/
-            /*not quite sure if it is a good idea to separate requests for preview only and record */
-
-                mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-        } catch (CameraAccessException e) {
-            Log.d(TAG, "FAILED createCaptureRequest");
-            e.printStackTrace();
-        }
-
-        return (mCaptureSession == null || mRequestBuilder == null);
+        super(device, consumers, meter, cameraHandler);
     }
 
     /*for now only for the previewBuilder */
@@ -180,14 +42,12 @@ public class AlternatingCaptureSession implements ExposureMeter.EventListener{
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
      */
-    private void setAlternatingCapture(ExposureMeter.MeteringValues param){
+    protected void setCaptureParameters(ExposureMeter.MeteringValues param){
 
-        int evenIso = param.getEvenIso();
-        int oddIso = param.getOddIso();
-        long mEvenExposure = param.getEvenDuration();
-        long mOddExposure = param.getOddDuration();
-
-        mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, ExposureMeter.FRAME_DURATION);
+        int evenIso = param.getUnderexposeIso();
+        int oddIso = param.getOverexposeIso();
+        long mEvenExposure = param.getUnderexposeDuration();
+        long mOddExposure = param.getOverexposeDuration();
 
         //evenFrame -> should be the short exposure (darker frame)
         mRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, evenIso);
@@ -208,14 +68,5 @@ public class AlternatingCaptureSession implements ExposureMeter.EventListener{
             Log.d(TAG, "FAILED setRepeatingBurst");
             e.printStackTrace();
         }
-    }
-
-    public void close(){
-        mCaptureSession.close();
-    }
-
-    @Override
-    public void onMeterEvent(ExposureMeter.MeteringValues param) {
-        setAlternatingCapture(param);
     }
 }

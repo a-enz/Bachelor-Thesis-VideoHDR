@@ -75,7 +75,7 @@ public class HdrCamera {
     private RenderScript mRS;
 
     //Configurable Capture Session that triggers camera frame capture
-    private AlternatingCaptureSession mCaptureSession;
+    private SimpleCaptureSession mCaptureSession;
     //Listener for preview changes made from the camera
     private ConfigurePreviewListener mConfigPreviewListener;
 
