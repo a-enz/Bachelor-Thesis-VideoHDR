@@ -75,7 +75,7 @@ public class HdrCamera {
     private RenderScript mRS;
 
     //Configurable Capture Session that triggers camera frame capture
-    private AlternatingSession mCaptureSession;
+    private AlternatingCaptureSession mCaptureSession;
     //Listener for preview changes made from the camera
     private ConfigurePreviewListener mConfigPreviewListener;
 
@@ -125,7 +125,7 @@ public class HdrCamera {
             mCameraDevice = camera;
 
             //create alternating session and start first request
-            /* no need to call AlternatingSession.setAlternatingCapture here since after creation of
+            /* no need to call AlternatingCaptureSession.setAlternatingCapture here since after creation of
             * aCaptureSession a Callback (onConfigured) will directly invoke that method
             * for now we just assume that it is best to reset the values every time the camera is closed and then
             * opened again*/
@@ -343,7 +343,7 @@ public class HdrCamera {
 
     public void startFuseCapture(){
         //TODO implement
-        mCaptureSession = new AlternatingSession(HdrCamera.this,
+        mCaptureSession = new AlternatingCaptureSession(HdrCamera.this,
                 mConsumerSurfaces,
                 mExposureMeter,
                 mCameraHandler);
@@ -383,7 +383,7 @@ public class HdrCamera {
         setupSurfaces(); //reconnect surfaces
 
         //restart session
-        mCaptureSession = new AlternatingSession(HdrCamera.this,
+        mCaptureSession = new AlternatingCaptureSession(HdrCamera.this,
                 mConsumerSurfaces,
                 mExposureMeter,
                 mCameraHandler);

@@ -9,23 +9,23 @@ import java.util.List;
 
 /**
  * Abstracting a Session with repeatingBurst containing alternating exposure shots as
- * an AlternatingSession
+ * an AlternatingCaptureSession
  *
- * A AlternatingSession should be created for a specific device, some consumer surfaces and
+ * A AlternatingCaptureSession should be created for a specific device, some consumer surfaces and
  * a Thread handling the operation.
  *
  * Later on only parameters for frame exposure should be changed (like iso, exposure time)
  * Created by andi on 14.08.2015.
  */
-public class AlternatingSession implements ExposureMeter.EventListener{
-    private static final String TAG = "AlternatingSession";
+public class AlternatingCaptureSession implements ExposureMeter.EventListener{
+    private static final String TAG = "AlternatingCaptureSession";
 
     /*The associated CameraCaptureSession. Should not change, or else we need to create
-    a new AlternatingSession as well */
+    a new AlternatingCaptureSession as well */
     private CameraCaptureSession mCaptureSession;
 
     /*builder for the camera device we are using for the alternating session preview
-      or the record request, depending on how the AlternatingSession was created (isRecording)
+      or the record request, depending on how the AlternatingCaptureSession was created (isRecording)
      */
     private CaptureRequest.Builder mRequestBuilder;
 
@@ -132,10 +132,10 @@ public class AlternatingSession implements ExposureMeter.EventListener{
      * @param consumers consumer surfaces of captured requests
      * @param cameraHandler background camera thread to handle the requests
      */
-    public AlternatingSession(HdrCamera device,
-                              List<Surface> consumers,
-                              ExposureMeter meter,
-                              Handler cameraHandler) {
+    public AlternatingCaptureSession(HdrCamera device,
+                                     List<Surface> consumers,
+                                     ExposureMeter meter,
+                                     Handler cameraHandler) {
 
         mCamera = device;
         mConsumerSurfaces = consumers;
