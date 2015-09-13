@@ -13,7 +13,6 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -326,7 +325,7 @@ public class HdrCamera {
         Surface previewSurface = new Surface(texture); //create surface for the textureView
 
         //set up exposure metering with the appropriate histogram input
-        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize); //FIXME mCaptureSession is null at this time
+        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize);
 
         //set up PreviewFuseProcessor
         mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
@@ -400,7 +399,7 @@ public class HdrCamera {
         * essentially we need to do the whole thing that is done when opening the camera*/
         //TODO restart preview in a better way
         mCaptureSession.close(); //stop camera outputs
-        mPreviewFuseProcessor.stop(); //no longer fuse FIXME might have to do this by destroying renderscript? this way it removes stuff for preview and histogram
+        mPreviewFuseProcessor.stop(); //no longer fuse
         mExposureMeter.destroyHistogramProcessor();
 
         mCameraState = CameraState.MODE_FUSE;

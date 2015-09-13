@@ -99,16 +99,6 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
 
 
-
-    /* VIDEO RECORDER AND RECORDER STATE FIELDS */
-    /**
-     * global recording state of the camera
-     */
-    private static boolean mIsRecording = false;
-
-
-
-
     /* UI METHODS */
 
     public static VideoHdrFragment newInstance() {
@@ -169,7 +159,6 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     public void onResume() {
         super.onResume();
         if (mTextureView.isAvailable()) {
-            //configureTransform(mTextureView.getWidth(), mTextureView.getHeight()); //TODO necessary here?
             mHdrCamera.openCamera(mTextureView);
             Log.d(TAG, "onResume: CAMERA is open");
         } else {

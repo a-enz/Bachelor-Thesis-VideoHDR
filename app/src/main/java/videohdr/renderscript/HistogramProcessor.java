@@ -36,7 +36,6 @@ public class HistogramProcessor {
      * Thread for the renderscript execution
      */
 
-    private HandlerThread mProcessingThread;
     private Handler mProcessingHandler;
 
 
@@ -69,7 +68,7 @@ public class HistogramProcessor {
                 EIGHT_BIT_COLOR_SIZE);
 
         //a background thread to work the RS
-        mProcessingThread = new HandlerThread("ViewfinderProcessor");
+        HandlerThread mProcessingThread = new HandlerThread("ViewfinderProcessor");
         mProcessingThread.start();
         mProcessingHandler = new Handler(mProcessingThread.getLooper());
 

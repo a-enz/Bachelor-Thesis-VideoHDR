@@ -163,7 +163,6 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
 
 
         try {
-            /*TODO maybe we should separate this part below from createSessionAndCaptureBuilder and make two different methods*/
             /*not quite sure if it is a good idea to separate requests for preview only and record */
 
             mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
