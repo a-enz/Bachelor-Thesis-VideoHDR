@@ -1,6 +1,7 @@
 package videohdr.recorder;
 
 import android.app.Activity;
+import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -71,15 +72,17 @@ public class VideoRecorder {
     private void setupRecorder(int rotation, int width, int height) throws IOException {
 
         mRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        //mRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_TIME_LAPSE_HIGH));
         mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mRecorder.setOutputFile(tempVideoFile.getAbsolutePath());
-        Log.d(TAG, "outputfile set to: " +tempVideoFile);
-        mRecorder.setVideoEncodingBitRate(10000000);
+        Log.d(TAG, "outputfile set to: " + tempVideoFile);
+        mRecorder.setVideoEncodingBitRate(20000000);
         mRecorder.setVideoFrameRate(30);
         mRecorder.setVideoSize(width, height);
         mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
         int orientation = ORIENTATIONS.get(rotation);
         mRecorder.setOrientationHint(orientation);
+        Log.d(TAG, "Thread prepare() is running on : " + Thread.currentThread().getName());
         mRecorder.prepare();
     }
 
@@ -88,6 +91,7 @@ public class VideoRecorder {
     }
 
     public void start() throws IllegalStateException {
+        Log.d(TAG, "Thread start() is running on : " +Thread.currentThread().getName());
         mRecorder.start();
     }
 

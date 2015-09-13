@@ -25,9 +25,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //initial exposure time and iso
     private static final int INITIAL_EVEN_ISO = 120;
-    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 30;
+    private static final long INITIAL_EVEN_EXPOSURE = ONE_SECOND / 600;
     private static final int INITIAL_ODD_ISO = 120;
-    private static final long INITIAL_ODD_EXPOSURE = ONE_SECOND / 150;
+    private static final long INITIAL_ODD_EXPOSURE = FRAME_DURATION / 4;
 
     //the metering values
     private MeteringValues currentMeteringValues;
@@ -111,7 +111,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             long overExp = (long) (currentMeteringValues.overexposeDuration * overexpFactor);
             long underExp = (long) (currentMeteringValues.underexposeDuration * underexpFactor);
 
-            currentMeteringValues.overexposeDuration = (overExp > FRAME_DURATION) ? FRAME_DURATION : overExp;
+            currentMeteringValues.overexposeDuration = (overExp > FRAME_DURATION / 4) ? (FRAME_DURATION / 4) : overExp;
             currentMeteringValues.underexposeDuration =
                     (underExp > currentMeteringValues.overexposeDuration) ?
                             currentMeteringValues.overexposeDuration : underExp;

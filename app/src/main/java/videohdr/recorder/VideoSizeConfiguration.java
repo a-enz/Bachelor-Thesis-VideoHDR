@@ -27,7 +27,7 @@ public class VideoSizeConfiguration {
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
-    private static final int MAX_RECORDING_WIDTH = 2000;
+    private static final int MAX_RECORDING_WIDTH = 3000;
     private static final int MAX_PREVIEW_WIDTH = 1000;
     private static final int MAX_METERING_WIDTH = 400;
 

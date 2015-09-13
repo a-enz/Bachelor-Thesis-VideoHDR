@@ -47,6 +47,8 @@ public class HdrCamera {
     /* THREADING FOR CAMERA OPERATIONS */
     private Handler mCameraHandler;
 
+    private Handler mRecorderHandler;
+
     /* PREVIEW TEXTURE */
     private AutoFitTextureView mPreviewTextureView;
 
@@ -115,6 +117,10 @@ public class HdrCamera {
         mCameraThread.start();
         mCameraHandler = new Handler(mCameraThread.getLooper());
 
+        //starting recorder thread
+        HandlerThread mRecorderThread = new HandlerThread("RecorderOpsThread");
+        mRecorderThread.start();
+        mRecorderHandler = new Handler(mRecorderThread.getLooper());
     }
 
 
@@ -386,13 +392,23 @@ public class HdrCamera {
     /* RECORDER OPERATION METHODS */
     public void startRecording() throws IllegalStateException {
         Log.d(TAG, "trying to start recording");
-        mVideoRecorder.start();
+        mRecorderHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mVideoRecorder.start();
+            }
+        });
         mCameraState = CameraState.MODE_RECORD;
     }
 
     public void stopRecording() throws IllegalStateException {
         Log.d(TAG, "trying to stop recording");
-        mVideoRecorder.stop();
+        mRecorderHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mVideoRecorder.stop();
+            }
+        });
         /* preview needs to be restarted because stopping the videorecorder will put the
         * used MediaRecorder into the Initialize state, which means no output surface is available.
         * This also means the whole camera surface connection is reset and needs to be built again.
