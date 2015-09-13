@@ -1,4 +1,4 @@
-package videohdr.camera;
+package videohdr.capture;
 
 import android.hardware.camera2.*;
 import android.os.Handler;
@@ -6,6 +6,9 @@ import android.util.Log;
 import android.view.Surface;
 import java.util.Arrays;
 import java.util.List;
+
+import videohdr.camera.ExposureMeter;
+import videohdr.camera.HdrCamera;
 
 /**
  * Abstracting a Session with repeatingBurst containing alternating exposure shots as

@@ -1,4 +1,4 @@
-package videohdr.camera;
+package videohdr.capture;
 
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CaptureRequest;
@@ -8,10 +8,13 @@ import android.view.Surface;
 
 import java.util.List;
 
+import videohdr.camera.ExposureMeter;
+import videohdr.camera.HdrCamera;
+
 /**
  * Created by andi on 12.09.2015.
  */
-public class UnderExpCaptureSession extends SimpleCaptureSession {
+public class OverExpCaptureSession extends SimpleCaptureSession{
     private static final String TAG = "OECapSess";
 
 
@@ -23,7 +26,7 @@ public class UnderExpCaptureSession extends SimpleCaptureSession {
      * @param consumers consumer surfaces of captured requests
      * @param cameraHandler background camera thread to handle the requests
      */
-    public UnderExpCaptureSession(HdrCamera device,
+    public OverExpCaptureSession(HdrCamera device,
                                  List<Surface> consumers,
                                  ExposureMeter meter,
                                  Handler cameraHandler) {
@@ -37,8 +40,8 @@ public class UnderExpCaptureSession extends SimpleCaptureSession {
      * be modified during a session
      */
     protected void setCaptureParameters(ExposureMeter.MeteringValues param){
-        int iso = param.getUnderexposeIso();
-        long exposureDuration = param.getUnderexposeDuration();
+        int iso = param.getOverexposeIso();
+        long exposureDuration = param.getOverexposeDuration();
 
         //evenFrame -> should be the short exposure (darker frame)
         mRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso);

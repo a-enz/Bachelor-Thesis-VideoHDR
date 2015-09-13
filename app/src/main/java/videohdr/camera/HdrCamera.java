@@ -14,9 +14,12 @@ import android.util.Size;
 import android.view.Surface;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import videohdr.capture.AlternatingCaptureSession;
+import videohdr.capture.OverExpCaptureSession;
+import videohdr.capture.SimpleCaptureSession;
+import videohdr.capture.UnderExpCaptureSession;
 import videohdr.renderscript.PreviewFuseProcessor;
 import videohdr.view.AutoFitTextureView;
 import videohdr.recorder.VideoRecorder;

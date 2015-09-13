@@ -1,4 +1,4 @@
-package videohdr.camera;
+package videohdr.capture;
 
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -10,6 +10,9 @@ import android.util.Log;
 import android.view.Surface;
 
 import java.util.List;
+
+import videohdr.camera.ExposureMeter;
+import videohdr.camera.HdrCamera;
 
 /**
  * Created by andi on 12.09.2015.
