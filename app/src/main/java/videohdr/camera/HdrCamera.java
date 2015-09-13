@@ -326,7 +326,7 @@ public class HdrCamera {
         Surface previewSurface = new Surface(texture); //create surface for the textureView
 
         //set up exposure metering with the appropriate histogram input
-        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize,mCaptureSession); //FIXME mCaptureSession is null at this time
+        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize); //FIXME mCaptureSession is null at this time
 
         //set up PreviewFuseProcessor
         mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
@@ -368,6 +368,10 @@ public class HdrCamera {
                 mExposureMeter,
                 mCameraHandler);
 
+    }
+
+    public void adjustMeteringManually(double overexpFactor, double underxpFactor){
+        mExposureMeter.adjustMeteringValues(overexpFactor, underxpFactor);
     }
 
     /* GETTER & SETTER METHODS */

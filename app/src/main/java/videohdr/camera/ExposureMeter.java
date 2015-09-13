@@ -1,5 +1,6 @@
 package videohdr.camera;
 
+import android.app.usage.UsageEvents;
 import android.renderscript.RenderScript;
 import android.util.Size;
 import android.view.Surface;
@@ -83,8 +84,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         * [ ] run a background job that updates alternatingsessoin periodically*/
 
 
-
-        //mCaptureSession.onMeterEvent(null, null);
+        /*if(mCaptureSession != null) mCaptureSession.onMeterEvent(stuff, stuff); */
     }
 
 
@@ -99,8 +99,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      * @param inputSize input size of the frames
      * @return the input surface for the HistogramProcessor
      */
-    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize, EventListener captureSession){
-        mCaptureSession = captureSession; //TODO delete this and create a listener that checks on exposure meter events
+    public Surface setupHistogramProcessor(RenderScript rs, Size inputSize){
         mHistProc = new HistogramProcessor(rs,inputSize, this);
         return mHistProc.getInputSurface();
     }
@@ -114,6 +113,25 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         mHistProc = null;
     }
 
+    public void setMeteringEventListener(EventListener listener){
+        mCaptureSession = listener;
+    }
+
+    public void adjustMeteringValues(double overexpFactor, double underexpFactor){
+        synchronized (this) {
+            long overExp = (long) (currentMeteringValues.overexposeDuration * overexpFactor);
+            long underExp = (long) (currentMeteringValues.underexposeDuration * underexpFactor);
+
+            currentMeteringValues.overexposeDuration = (overExp > FRAME_DURATION) ? FRAME_DURATION : overExp;
+            currentMeteringValues.underexposeDuration =
+                    (underExp > currentMeteringValues.overexposeDuration) ?
+                            currentMeteringValues.overexposeDuration : underExp;
+
+        }
+        //TODO maybe make this the main function to adjust stuff?
+        if(mCaptureSession != null) mCaptureSession.onMeterEvent(currentMeteringValues);
+    }
+
 
     @Override
     public void onHistogramAvailable(int[] frameHistogram) {
@@ -123,10 +141,11 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     /* GETTER & SETTER */
     public MeteringValues getMeteringValues(){
+        MeteringValues res;
         synchronized (this){
-            MeteringValues res = currentMeteringValues;
+            res = currentMeteringValues;
         }
-        return currentMeteringValues;
+        return res;
     }
 
 

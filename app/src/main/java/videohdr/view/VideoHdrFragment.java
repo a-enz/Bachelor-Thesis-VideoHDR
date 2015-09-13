@@ -227,14 +227,14 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
                 final float ACCELERATION_FACTOR = 8;
                 double scaleFactor = Math.pow(2.f, yDistNorm * ACCELERATION_FACTOR);
-                Log.d(TAG, "scaling by factor: " + scaleFactor);
+
                 switch(camState){
                     case MODE_UNDEREXPOSE:{
-                        mHdrCamera.startUnderexposeCapture();
+                        mHdrCamera.adjustMeteringManually(1, scaleFactor);
                         break;
                     }
                     case MODE_OVEREXPOSE: {
-                        mHdrCamera.startOverexposeCapture();
+                        mHdrCamera.adjustMeteringManually(scaleFactor, 1);
                         break;
                     }
                     default: Log.e(TAG, "this can't happen");

@@ -64,6 +64,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
                     mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, ExposureMeter.FRAME_DURATION);
 
                     ExposureMeter.MeteringValues param = mExposureMeter.getMeteringValues();
+                    mExposureMeter.setMeteringEventListener(SimpleCaptureSession.this);
 
                     setCaptureParameters(param);
 
