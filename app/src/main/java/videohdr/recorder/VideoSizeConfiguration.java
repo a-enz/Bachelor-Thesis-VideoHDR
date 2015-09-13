@@ -28,8 +28,8 @@ public class VideoSizeConfiguration {
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
     private static final int MAX_RECORDING_WIDTH = 2000;
-    private static final int MAX_PREVIEW_WIDTH = 800;
-    private static final int MAX_METERING_WIDTH = 300;
+    private static final int MAX_PREVIEW_WIDTH = 1000;
+    private static final int MAX_METERING_WIDTH = 400;
 
     private static final Class<Allocation> RENDERSCRIPT_CLASS = Allocation.class;
 
@@ -84,7 +84,7 @@ public class VideoSizeConfiguration {
                 return size;
             }
         }
-        Log.e(TAG, "Couldn't find any suitable video size");
+        Log.e(TAG, "Couldn't find any suitable metering size. \n Returned value: " + choices[choices.length - 1]);
         return choices[choices.length - 1];
     }
 
