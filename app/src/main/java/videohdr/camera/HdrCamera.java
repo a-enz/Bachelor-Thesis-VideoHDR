@@ -375,8 +375,12 @@ public class HdrCamera {
 
     }
 
-    public void adjustMeteringManually(double overexpFactor, double underxpFactor){
-        mExposureMeter.adjustMeteringValues(overexpFactor, underxpFactor);
+    public void adjustUnderExposureManually(double factor){
+        mExposureMeter.adjustUnderexposure(factor);
+    }
+
+    public void adjustOverexposureManually(double factor){
+        mExposureMeter.adjustOverexposure(factor);
     }
 
     /* GETTER & SETTER METHODS */

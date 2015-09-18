@@ -219,11 +219,11 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
                 switch(camState){
                     case MODE_UNDEREXPOSE:{
-                        mHdrCamera.adjustMeteringManually(1, scaleFactor);
+                        mHdrCamera.adjustUnderExposureManually(scaleFactor);
                         break;
                     }
                     case MODE_OVEREXPOSE: {
-                        mHdrCamera.adjustMeteringManually(scaleFactor, 1);
+                        mHdrCamera.adjustOverexposureManually(scaleFactor);
                         break;
                     }
                     default: Log.e(TAG, "this can't happen");
