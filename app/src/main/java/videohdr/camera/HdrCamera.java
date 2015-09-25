@@ -107,7 +107,7 @@ public class HdrCamera {
         mAssociatedActivity = activity;
         mManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         mRS = RenderScript.create(activity);
-        mExposureMeter = new ExposureMeter();
+        mExposureMeter = new ExposureMeter(this);
 
         //pick an actual camera device: we want a back facing camera with certain capabilities
         createWithCapabilities();
@@ -435,6 +435,9 @@ public class HdrCamera {
 
     }
 
+    public void cleanup(){
+        mExposureMeter.finish();
+    }
 
 
 

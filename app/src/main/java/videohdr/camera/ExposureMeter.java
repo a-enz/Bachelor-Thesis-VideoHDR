@@ -1,10 +1,20 @@
 package videohdr.camera;
 
 
+import android.media.MediaScannerConnection;
+import android.net.Uri;
+import android.os.Environment;
 import android.renderscript.RenderScript;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import videohdr.renderscript.HistogramProcessor;
 
@@ -36,17 +46,36 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     private static final int INITIAL_ODD_ISO = MIN_ISO;
     private static final long INITIAL_ODD_EXPOSURE = MAX_DURATION;
 
-
+    private static final int UO_CHANNELS = 4;
     //the metering values
     private MeteringValues currentMeteringValues;
 
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
 
+    private int totalMeteringPixels = 0;
+
+    //Log file for the histogram for this particular session
+    private BufferedWriter logFileWriter;
+
+
     //The capture session we want to influence;
+    private HdrCamera mCamera;
     private EventListener mCaptureSession;
 
-    public ExposureMeter(){
+    public ExposureMeter(HdrCamera camera){
+        mCamera = camera;
+        File logFile = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DCIM + "/Camera/HistLOG_" +
+                        new SimpleDateFormat("yyyyMMdd_HHmmSS").format(new Date()) + ".txt");
+
+        try{
+            logFileWriter = new BufferedWriter(new FileWriter(logFile, true));
+        } catch (IOException e){
+            Log.d(TAG, "error creating the LogFileWriter");
+            logFileWriter = null;
+        }
+
         synchronized (this){
             currentMeteringValues = new MeteringValues(INITIAL_EVEN_ISO,
                                                         INITIAL_EVEN_EXPOSURE,
@@ -57,23 +86,63 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
     /* HISTOGRAM EVALUATION METHODS */
+
+    /**
+     * This method is mostly hardcoded for my specific case: somehow upper- and lowermost
+     * channels of the frameHistogram are never filled at all. Unfortunately the number of empty
+     * channels is not even symmetric for upper/lower channels.
+     * - using Nexus 6 phone
+     * - using very small frame size for histogram
+     * @param frameHistogram histogram, has to be of size 256
+     */
     private void evaluate(int[] frameHistogram){
+        if (totalMeteringPixels == 0 ||
+                mCamera.getCameraState() == HdrCamera.CameraState.MODE_OVEREXPOSE ||
+                mCamera.getCameraState() == HdrCamera.CameraState.MODE_UNDEREXPOSE) return;
+        String histString = "";
+
+        if(mCamera.getCameraState() != HdrCamera.CameraState.MODE_RECORD){
+            int j = 0;
+            while(j < frameHistogram.length - 1) histString += frameHistogram[j++] + ",";
+            histString += frameHistogram[j];
+
+            if(logFileWriter != null){
+                try {
+                    logFileWriter.append(histString);
+                    logFileWriter.newLine();
+                } catch(IOException e){
+                    Log.d(TAG, "error writing histogram to file");
+                }
+            }
+        }
 
         //check histograms -> maybe evaluate if they are really from dark and bright frame
         //check if if even more over/underexposed than before
         //give estimate depending on some set metrics
         //send estimate to AlternatingCaptureSession
 
-
-        int sumColors = 0;
-        int sumPixels = 0;
-        for(int i = 0; i < frameHistogram.length; i ++){
-            sumColors += i * frameHistogram[i];
-            sumPixels += frameHistogram[i];
+        int underExpAmount = 0;
+        int overExpAmount = 0;
+        int startPos = -1;
+        while(frameHistogram[++startPos]==0);
+        for(int i = startPos; startPos + UO_CHANNELS  > i; i++){
+            underExpAmount += frameHistogram[i];
         }
 
+        startPos = frameHistogram.length;
+        while(frameHistogram[--startPos]==0);
+        for(int i = startPos; startPos - UO_CHANNELS < i; i--){
+            overExpAmount += frameHistogram[i];
+        }
 
-        //Log.d(TAG, "Mean pixel value: " + sumColors / sumPixels);
+        float underExpPercent = (float) underExpAmount / totalMeteringPixels;
+        float overExpPercent = (float) overExpAmount / totalMeteringPixels;
+
+
+        if(underExpPercent > 0.02f || overExpPercent > 0.02f) {
+            Log.d(TAG, "(Amount of Pixels Underexposed: " + 100*underExpPercent + "\n " +
+                    "Overexposed: " + 100*overExpPercent);
+        }
 
         /*TODO
         * [ ] check if it is bright/dark histogram
@@ -98,6 +167,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      */
     public Surface setupHistogramProcessor(RenderScript rs, Size inputSize){
         mHistProc = new HistogramProcessor(rs,inputSize, this);
+        totalMeteringPixels = inputSize.getWidth() * inputSize.getHeight();
         return mHistProc.getInputSurface();
     }
 
@@ -107,6 +177,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      */
     public void destroyHistogramProcessor(){
         mHistProc.disconnectListener(); //no more evaluation calls as soon as camera closes
+        totalMeteringPixels = 0;
         mHistProc = null;
     }
 
@@ -191,6 +262,15 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         }
         Log.d(TAG, currentMeteringValues.toString());
         mCaptureSession.onMeterEvent(currentMeteringValues);
+    }
+
+    public void finish(){
+        try{
+            if(logFileWriter != null) logFileWriter.close();
+
+        } catch(IOException e) {
+            Log.d(TAG, "closing the logfile writer failed");
+        }
     }
 
 

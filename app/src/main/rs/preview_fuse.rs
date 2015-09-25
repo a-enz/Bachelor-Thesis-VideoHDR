@@ -17,6 +17,12 @@ uchar4 __attribute__((kernel)) fuseFrames(uchar4 prevPixel, uint32_t x, uint32_t
     curPixel.b = rsGetElementAtYuv_uchar_V(gCurrentFrame, x, y);
     curPixel.a = 255;
 
+
+    //curPixel.r contains the Y component, which represents luminance
+    //compute the weight for this pixel, use weight from previous pixel. combine accordingly
+    //use some weighting function similar to a gaussion, where middle parts have hight weight
+    //and outer parts (over/underexposed have low weights)
+
     uchar4 mergedPixel;
     // simple mean value merge of the frames. would not require frame swap above
 
