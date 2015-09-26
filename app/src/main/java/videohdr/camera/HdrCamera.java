@@ -436,6 +436,7 @@ public class HdrCamera {
     }
 
     public void cleanup(){
+        /* any resource cleanup? */
         mExposureMeter.finish();
     }
 

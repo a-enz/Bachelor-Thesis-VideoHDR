@@ -1,7 +1,6 @@
 package videohdr.recorder;
 
 import android.app.Activity;
-import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -101,7 +100,7 @@ public class VideoRecorder {
         mRecorder.reset();
 
         //rename file with timestamp
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmSSS").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String filePath = directoryPath + "/VID_" + timeStamp + ".mp4";
         tempVideoFile.renameTo(new File(filePath));
         Log.d(TAG, "Output video filepath correct? " + filePath);

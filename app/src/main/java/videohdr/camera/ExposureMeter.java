@@ -1,8 +1,6 @@
 package videohdr.camera;
 
 
-import android.media.MediaScannerConnection;
-import android.net.Uri;
 import android.os.Environment;
 import android.renderscript.RenderScript;
 import android.util.Log;
@@ -57,6 +55,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //Log file for the histogram for this particular session
     private BufferedWriter logFileWriter;
+    private int histogramTAG = 0;
 
 
     //The capture session we want to influence;
@@ -65,9 +64,10 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     public ExposureMeter(HdrCamera camera){
         mCamera = camera;
+
         File logFile = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DCIM + "/Camera/HistLOG_" +
-                        new SimpleDateFormat("yyyyMMdd_HHmmSS").format(new Date()) + ".txt");
+                        new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".txt");
 
         try{
             logFileWriter = new BufferedWriter(new FileWriter(logFile, true));
@@ -96,12 +96,15 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      * @param frameHistogram histogram, has to be of size 256
      */
     private void evaluate(int[] frameHistogram){
+        histogramTAG++;
+        /* TODO new idea
+        * evaluate will only execute during recording and try to keep the histogram values
+        * as close as possible to the histogram when the recording was started*/
         if (totalMeteringPixels == 0 ||
-                mCamera.getCameraState() == HdrCamera.CameraState.MODE_OVEREXPOSE ||
-                mCamera.getCameraState() == HdrCamera.CameraState.MODE_UNDEREXPOSE) return;
-        String histString = "";
+                mCamera.getCameraState() != HdrCamera.CameraState.MODE_RECORD) return;
 
-        if(mCamera.getCameraState() != HdrCamera.CameraState.MODE_RECORD){
+        String histString = "[" + String.format("%08d",histogramTAG) + "]::";
+        if(mCamera.getCameraState() == HdrCamera.CameraState.MODE_RECORD){
             int j = 0;
             while(j < frameHistogram.length - 1) histString += frameHistogram[j++] + ",";
             histString += frameHistogram[j];
@@ -267,7 +270,6 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     public void finish(){
         try{
             if(logFileWriter != null) logFileWriter.close();
-
         } catch(IOException e) {
             Log.d(TAG, "closing the logfile writer failed");
         }
