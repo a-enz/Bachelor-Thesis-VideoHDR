@@ -61,7 +61,7 @@ public class HdrCamera {
     /* Will probably contain the MediaRecorder surface and several Renderscripts
        (Histogram, Preview generation)
      */
-    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null, null);
+    private List<Surface> mConsumerSurfaces = Arrays.asList(null, null);
 
     /* Object handling the Video recording of this camera */
     /* currently deactivated to debug preview surface stuff. Because this needs debugging itself:
@@ -264,7 +264,7 @@ public class HdrCamera {
 
                 mCaptureSession.close();
                 mPreviewFuseProcessor.stop(); //no longer fuse
-                mExposureMeter.destroyHistogramProcessor();
+                //mExposureMeter.destroyHistogramProcessor();FIXME
 
                 if (mVideoRecorder != null) {
                     mVideoRecorder.release();
@@ -296,7 +296,7 @@ public class HdrCamera {
 
         mRecordSize = VideoSizeConfiguration.chooseVideoSize(map);
 
-        mMeteringSize = VideoSizeConfiguration.chooseMeteringSize(map);
+        //mMeteringSize = VideoSizeConfiguration.chooseMeteringSize(map);FIXME
 
     }
 
@@ -331,7 +331,7 @@ public class HdrCamera {
         Surface previewSurface = new Surface(texture); //create surface for the textureView
 
         //set up exposure metering with the appropriate histogram input
-        Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize);
+        //Surface meteringSurface = mExposureMeter.setupHistogramProcessor(mRS,mMeteringSize);FIXME
 
         //set up PreviewFuseProcessor
         mPreviewFuseProcessor = new PreviewFuseProcessor(mRS, mPreviewSize);
@@ -347,7 +347,7 @@ public class HdrCamera {
 
         mConsumerSurfaces.set(0,previewFuseSurface);
         mConsumerSurfaces.set(1,recorderSurface);
-        mConsumerSurfaces.set(2,meteringSurface);
+        //mConsumerSurfaces.set(2,meteringSurface);FIXME
     }
 
     public void startUnderexposeCapture(){
@@ -420,7 +420,7 @@ public class HdrCamera {
         //TODO restart preview in a better way
         mCaptureSession.close(); //stop camera outputs
         mPreviewFuseProcessor.stop(); //no longer fuse
-        mExposureMeter.destroyHistogramProcessor();
+        //mExposureMeter.destroyHistogramProcessor(); FIXME
 
         mCameraState = CameraState.MODE_FUSE;
 

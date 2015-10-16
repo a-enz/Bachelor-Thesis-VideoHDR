@@ -103,27 +103,11 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         if (totalMeteringPixels == 0 ||
                 mCamera.getCameraState() != HdrCamera.CameraState.MODE_RECORD) return;
 
-        String histString = "[" + String.format("%08d",histogramTAG) + "]::";
-        if(mCamera.getCameraState() == HdrCamera.CameraState.MODE_RECORD){
-            int j = 0;
-            while(j < frameHistogram.length - 1) histString += frameHistogram[j++] + ",";
-            histString += frameHistogram[j];
+        //first log this histogram with the current tag
+        logHistogram(frameHistogram);
 
-            if(logFileWriter != null){
-                try {
-                    logFileWriter.append(histString);
-                    logFileWriter.newLine();
-                } catch(IOException e){
-                    Log.d(TAG, "error writing histogram to file");
-                }
-            }
-        }
 
-        //check histograms -> maybe evaluate if they are really from dark and bright frame
-        //check if if even more over/underexposed than before
-        //give estimate depending on some set metrics
-        //send estimate to AlternatingCaptureSession
-
+        //compute some metrics about over/underexposure of this frame
         int underExpAmount = 0;
         int overExpAmount = 0;
         int startPos = -1;
@@ -182,6 +166,24 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         mHistProc.disconnectListener(); //no more evaluation calls as soon as camera closes
         totalMeteringPixels = 0;
         mHistProc = null;
+    }
+
+    private void logHistogram(int[] frameHistogram){
+        String histString = "[" + String.format("%08d",histogramTAG) + "]::";
+
+        int j = 0;
+        while(j < frameHistogram.length - 1) histString += frameHistogram[j++] + ",";
+        histString += frameHistogram[j];
+
+        if(logFileWriter != null){
+            try {
+                logFileWriter.append(histString);
+                logFileWriter.newLine();
+            } catch(IOException e){
+                Log.d(TAG, "error writing histogram to file");
+            }
+        }
+
     }
 
     public void setMeteringEventListener(EventListener listener){
