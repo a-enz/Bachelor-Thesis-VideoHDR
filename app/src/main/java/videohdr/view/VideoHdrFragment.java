@@ -16,6 +16,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Switch;
 
 import videohdr.camera.HdrCamera;
 
@@ -47,6 +48,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     private Button mRecordButton;
     private Button mOverexposeButton;
     private Button mUnderexposeButton;
+
+    private Switch mAutoExpSwitch;
 
     private Size mPreviewSize;
 
@@ -146,6 +149,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
         mUnderexposeButton = (Button) view.findViewById(R.id.b_underexpose);
         mUnderexposeButton.setOnClickListener(this);
+
+        mAutoExpSwitch = (Switch)  view.findViewById(R.id.sw_auto_exp);
 
         if(savedInstanceState != null){
             Log.d(TAG, "restoring button states");

@@ -9,4 +9,5 @@
     <string name="b_text_underexpose">U-Exp</string>
     <string name="b_text_return">Return</string>
     <string name="stop">Stop</string>
+    <string name="title_auto_exp">AutoExp\nToggle</string>
 </resources>

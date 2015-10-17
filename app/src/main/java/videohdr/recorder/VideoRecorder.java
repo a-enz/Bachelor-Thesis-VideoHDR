@@ -75,7 +75,7 @@ public class VideoRecorder {
         mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mRecorder.setOutputFile(tempVideoFile.getAbsolutePath());
         Log.d(TAG, "outputfile set to: " + tempVideoFile);
-        mRecorder.setVideoEncodingBitRate(40000000);
+        mRecorder.setVideoEncodingBitRate(100000000);
         mRecorder.setVideoFrameRate(30);
         mRecorder.setVideoSize(width, height);
         mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);

@@ -44,7 +44,10 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     private static final int INITIAL_ODD_ISO = MIN_ISO;
     private static final long INITIAL_ODD_EXPOSURE = MAX_DURATION;
 
+    //evaluation constants
     private static final int UO_CHANNELS = 4;
+    private static final float RATIO_OVEREXP = 0.2f;
+    private static final float RATIO_UNDEREXP = 0.2f;
     //the metering values
     private MeteringValues currentMeteringValues;
 
@@ -126,15 +129,24 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         float overExpPercent = (float) overExpAmount / totalMeteringPixels;
 
 
-        if(underExpPercent > 0.02f || overExpPercent > 0.02f) {
-            Log.d(TAG, "(Amount of Pixels Underexposed: " + 100*underExpPercent + "\n " +
-                    "Overexposed: " + 100*overExpPercent);
+
+        if(underExpPercent > RATIO_UNDEREXP) {
+            Log.d(TAG, "Underexposed pixels: " + 100*underExpPercent + "%");
+
+            //generate values for underexposed;
+
+        }
+
+        if(overExpPercent > RATIO_OVEREXP) {
+            Log.d(TAG, "Overexposed pixels: " + 100*overExpPercent + "%");
+
+            //generate values for overexposed
         }
 
         /*TODO
         * [ ] check if it is bright/dark histogram
         * [ ] evaluate accordingly, and update recommended values
-        * [ ] run a background job that updates alternatingsessoin periodically*/
+        * [ ] run a background job that updates AlternatingSession periodically*/
 
 
         /*if(mCaptureSession != null) mCaptureSession.onMeterEvent(stuff, stuff); */

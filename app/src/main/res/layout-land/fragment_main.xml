@@ -37,6 +37,22 @@
             android:layout_gravity="center"
             android:text="@string/record" />
 
+        <TextView
+            android:id="@+id/tv_auto_exp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="#fdf2fe"
+            android:text="@string/title_auto_exp"
+            android:layout_marginTop="40dp"/>
+
+        <Switch
+            android:id="@+id/sw_auto_exp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="80dp"/>
+
         <Button
             android:id="@+id/b_underexpose"
             android:layout_width="wrap_content"

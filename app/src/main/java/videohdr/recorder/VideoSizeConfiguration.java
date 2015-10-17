@@ -27,7 +27,8 @@ public class VideoSizeConfiguration {
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
-    private static final int MAX_RECORDING_WIDTH = 1600;
+    private static final float ASPECT_RATIO_RECORD = 9.f / 16.f;
+    private static final int MAX_RECORDING_WIDTH = 2500;
     private static final int MAX_PREVIEW_WIDTH = 1000;
     private static final int MAX_METERING_WIDTH = 400;
 
@@ -67,7 +68,7 @@ public class VideoSizeConfiguration {
         Size[] choices = map.getOutputSizes(RECORDER_CLASS);
 
         for (Size size : choices) {
-            if (size.getHeight() == size.getWidth() * ASPECT_RATIO && size.getWidth() <= MAX_RECORDING_WIDTH) {
+            if (size.getHeight() == size.getWidth() * ASPECT_RATIO_RECORD && size.getWidth() <= MAX_RECORDING_WIDTH) {
                 return size;
             }
         }
