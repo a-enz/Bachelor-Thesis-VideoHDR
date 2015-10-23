@@ -107,14 +107,17 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
      */
     private void evaluate(int[] frameHistogram){
         histogramTAG++;
-        /* TODO new idea
-        * evaluate will only execute during recording and try to keep the histogram values
-        * as close as possible to the histogram when the recording was started*/
+        HdrCamera.CameraState camState = mCamera.getCameraState();
         if (totalMeteringPixels == 0 ||
-                mCamera.getCameraState() != HdrCamera.CameraState.MODE_RECORD) return;
+                !(camState == HdrCamera.CameraState.MODE_RECORD ||
+                camState == HdrCamera.CameraState.MODE_FUSE)) return;
 
-        //first log this histogram with the current tag
-        logHistogram(frameHistogram);
+
+
+        //first log this histogram with the current tag FIXME might be better to disable when not needed for dev
+        if(camState == HdrCamera.CameraState.MODE_RECORD){
+            logHistogram(frameHistogram);
+        }
 
 
         //compute some metrics about over/underexposure of this frame
