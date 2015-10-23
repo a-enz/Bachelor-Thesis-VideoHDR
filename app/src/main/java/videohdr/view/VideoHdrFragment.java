@@ -16,6 +16,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.Switch;
 
 import videohdr.camera.HdrCamera;
@@ -35,6 +36,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     private static final String BUTTON_RECORD_ENABLED = "b.record.active";
     private static final String BUTTON_UNDEREXP_ENABLED = "b.ue.active";
     private static final String BUTTON_OVEREXP_ENABLED = "b.oe.active";
+    private static final String SWITCH_AUTOEXP_ENABLED = "s.ae.active";
 
     /* UI FIELDS*/
     /**
@@ -151,12 +153,27 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         mUnderexposeButton.setOnClickListener(this);
 
         mAutoExpSwitch = (Switch)  view.findViewById(R.id.sw_auto_exp);
+        mAutoExpSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) { //disable some buttons, start metering
+                    mUnderexposeButton.setEnabled(false);
+                    mOverexposeButton.setEnabled(false);
+                    mHdrCamera.startAutoMetering();
+                } else { //enable them again, stop metering
+                    mUnderexposeButton.setEnabled(true);
+                    mOverexposeButton.setEnabled(true);
+                    mHdrCamera.stopAutoMetering();
+                }
+            }
+        });
 
         if(savedInstanceState != null){
             Log.d(TAG, "restoring button states");
             mRecordButton.setEnabled(savedInstanceState.getBoolean(BUTTON_RECORD_ENABLED));
             mOverexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_OVEREXP_ENABLED));
             mUnderexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_UNDEREXP_ENABLED));
+            mAutoExpSwitch.setEnabled(savedInstanceState.getBoolean(SWITCH_AUTOEXP_ENABLED));
 
             mRecordButton.setText(savedInstanceState.getCharSequence(BUTTON_RECORD_TEXT));
             mOverexposeButton.setText(savedInstanceState.getCharSequence(BUTTON_OVEREXP_TEXT));
@@ -192,6 +209,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         outState.putBoolean(BUTTON_RECORD_ENABLED, mRecordButton.isEnabled());
         outState.putBoolean(BUTTON_OVEREXP_ENABLED, mOverexposeButton.isEnabled());
         outState.putBoolean(BUTTON_UNDEREXP_ENABLED, mUnderexposeButton.isEnabled());
+        outState.putBoolean(SWITCH_AUTOEXP_ENABLED, mAutoExpSwitch.isEnabled());
 
         //save text state
         outState.putCharSequence(BUTTON_RECORD_TEXT, mRecordButton.getText());
@@ -262,17 +280,20 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                     case R.id.b_record: {
                         mHdrCamera.startRecording();
                         mRecordButton.setText(R.string.stop);
+                        mAutoExpSwitch.setEnabled(false);
                         mOverexposeButton.setEnabled(false);
                         mUnderexposeButton.setEnabled(false);
                         break;
                     }
                     case R.id.b_underexpose: {
+                        mAutoExpSwitch.setEnabled(false);
                         mHdrCamera.startUnderexposeCapture();
                         mUnderexposeButton.setText(R.string.b_text_return);
                         mRecordButton.setEnabled(false);
                         break;
                     }
                     case R.id.b_overexpose: {
+                        mAutoExpSwitch.setEnabled(false);
                         mHdrCamera.startOverexposeCapture();
                         mOverexposeButton.setText(R.string.b_text_return);
                         mRecordButton.setEnabled(false);
@@ -282,9 +303,10 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 }
                 break;
             }
-            case MODE_UNDEREXPOSE:{
+            case MODE_UNDEREXPOSE: {
                 switch (viewID){
                     case R.id.b_underexpose: {
+                        mAutoExpSwitch.setEnabled(true);
                         mHdrCamera.startFuseCapture();
                         mUnderexposeButton.setText(R.string.b_text_underexpose);
                         mRecordButton.setEnabled(true);
@@ -301,6 +323,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 break;
             }
             case MODE_OVEREXPOSE:{
+                mAutoExpSwitch.setEnabled(false);
                 switch (viewID){
                     case R.id.b_underexpose: {
                         mHdrCamera.startUnderexposeCapture();
@@ -309,6 +332,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                         break;
                     }
                     case R.id.b_overexpose: {
+                        mAutoExpSwitch.setEnabled(true);
                         mHdrCamera.startFuseCapture();
                         mOverexposeButton.setText(R.string.b_text_overexpose);
                         mRecordButton.setEnabled(true);
@@ -321,10 +345,13 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             case MODE_RECORD:{
                 switch (viewID){
                     case R.id.b_record: {
+                        mAutoExpSwitch.setEnabled(true);
                         mHdrCamera.stopRecording();
                         mRecordButton.setText(R.string.record);
-                        mUnderexposeButton.setEnabled(true);
-                        mOverexposeButton.setEnabled(true);
+                        if(!mAutoExpSwitch.isChecked()) {
+                            mUnderexposeButton.setEnabled(true);
+                            mOverexposeButton.setEnabled(true);
+                        }
                         break;
                     }
                     default: Log.e(TAG, "Illegal button press during MODE_RECORD");

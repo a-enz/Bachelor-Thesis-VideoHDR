@@ -48,8 +48,14 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     private static final int UO_CHANNELS = 4;
     private static final float RATIO_OVEREXP = 0.2f;
     private static final float RATIO_UNDEREXP = 0.2f;
+
     //the metering values
-    private MeteringValues currentMeteringValues;
+    private MeteringParam currentMeteringParam;
+
+    //auto metering values
+    private boolean isAutoMetering;
+    private static final double AUTO_EXP_INC_FACTOR = 1.02f;
+    private static final double AUTO_EXP_DEC_FACTOR = 0.98f;
 
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
@@ -64,6 +70,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     //The capture session we want to influence;
     private HdrCamera mCamera;
     private EventListener mCaptureSession;
+
 
     public ExposureMeter(HdrCamera camera){
         mCamera = camera;
@@ -80,7 +87,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         }
 
         synchronized (this){
-            currentMeteringValues = new MeteringValues(INITIAL_EVEN_ISO,
+            currentMeteringParam = new MeteringParam(INITIAL_EVEN_ISO,
                                                         INITIAL_EVEN_EXPOSURE,
                                                         INITIAL_ODD_ISO,
                                                         INITIAL_ODD_EXPOSURE);
@@ -143,13 +150,21 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             //generate values for overexposed
         }
 
-        /*TODO
-        * [ ] check if it is bright/dark histogram
-        * [ ] evaluate accordingly, and update recommended values
-        * [ ] run a background job that updates AlternatingSession periodically*/
+        if(isAutoMetering && mCaptureSession != null) {
+
+            //TODO
+            // [ ] detect if current frame is supposed to be over / underexp
+            // [ ] influence exposureParam accordingly
+            // [ ] increasing over /underexp should be easy by checking for threshhold
+            // [ ] implement something to check if we need to reduce overexp / underexp
+
+            if(underExpAmount > RATIO_UNDEREXP){
+
+            }
 
 
-        /*if(mCaptureSession != null) mCaptureSession.onMeterEvent(stuff, stuff); */
+            mCaptureSession.onMeterEvent(currentMeteringParam);
+        }
     }
 
 
@@ -206,53 +221,40 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     //less problems with corner cases
     public void adjustOverexposure(double factor){
         if(mCaptureSession == null) return;
-        long dur_o;
-        long dur_u;
-        int iso_o;
-        int iso_u;
-        synchronized (this){
-            dur_o = currentMeteringValues.overexposeDuration;
-            dur_u= currentMeteringValues.underexposeDuration;
-            iso_o = currentMeteringValues.overexposeIso;
-            iso_u = currentMeteringValues.underexposeIso;
-        }
-        long dur_new_o = (long) (dur_o * factor);
-        int iso_new_o = (int) (iso_o * factor);
 
-        if(iso_o != MIN_ISO){
-            iso_new_o = (iso_new_o > MAX_ISO) ? MAX_ISO :
-                    ((iso_new_o < iso_u) ? iso_u : iso_new_o);
-            dur_new_o = dur_o;
-        }
-        else {
-            if(dur_new_o > MAX_DURATION){
-                dur_new_o = MAX_DURATION;
-                iso_new_o = MIN_ISO + 1;
-            }
-            else {
-                dur_new_o = (dur_new_o < dur_u) ? dur_u : dur_new_o;
-                iso_new_o = iso_o;
-            }
-        }
-        synchronized (this){
-            currentMeteringValues.overexposeDuration = dur_new_o;
-            currentMeteringValues.overexposeIso = iso_new_o;
-        }
-        Log.d(TAG, currentMeteringValues.toString());
-        mCaptureSession.onMeterEvent(currentMeteringValues);
+        calculateOverExpParam(factor); //values will be stored in 'currentMeteringParam'
+
+        Log.d(TAG, currentMeteringParam.toString());
+        mCaptureSession.onMeterEvent(currentMeteringParam);
     }
 
     public void adjustUnderexposure(double factor){
         if(mCaptureSession == null) return;
+
+        calculateUnderExpParam(factor); //values will be stored in 'currentMeteringParam'
+
+        Log.d(TAG, currentMeteringParam.toString());
+        mCaptureSession.onMeterEvent(currentMeteringParam);
+    }
+
+    public void startAutoMetering(){
+        isAutoMetering = true;
+    }
+
+    public void stopAutoMetering(){
+        isAutoMetering = false;
+    }
+
+    private void calculateUnderExpParam(double factor){
         long dur_o;
         long dur_u;
         int iso_o;
         int iso_u;
         synchronized (this){
-            dur_o = currentMeteringValues.overexposeDuration;
-            dur_u= currentMeteringValues.underexposeDuration;
-            iso_o = currentMeteringValues.overexposeIso;
-            iso_u = currentMeteringValues.underexposeIso;
+            dur_o = currentMeteringParam.overexposeDuration;
+            dur_u= currentMeteringParam.underexposeDuration;
+            iso_o = currentMeteringParam.overexposeIso;
+            iso_u = currentMeteringParam.underexposeIso;
         }
         long dur_new_u = (long) (dur_u * factor);
         int iso_new_u = (int) (iso_u * factor);
@@ -274,11 +276,44 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         }
 
         synchronized (this){
-            currentMeteringValues.underexposeDuration = dur_new_u;
-            currentMeteringValues.underexposeIso = iso_new_u;
+            currentMeteringParam.underexposeDuration = dur_new_u;
+            currentMeteringParam.underexposeIso = iso_new_u;
         }
-        Log.d(TAG, currentMeteringValues.toString());
-        mCaptureSession.onMeterEvent(currentMeteringValues);
+    }
+
+    private void calculateOverExpParam(double factor){
+        long dur_o;
+        long dur_u;
+        int iso_o;
+        int iso_u;
+        synchronized (this){
+            dur_o = currentMeteringParam.overexposeDuration;
+            dur_u= currentMeteringParam.underexposeDuration;
+            iso_o = currentMeteringParam.overexposeIso;
+            iso_u = currentMeteringParam.underexposeIso;
+        }
+        long dur_new_o = (long) (dur_o * factor);
+        int iso_new_o = (int) (iso_o * factor);
+
+        if(iso_o != MIN_ISO){
+            iso_new_o = (iso_new_o > MAX_ISO) ? MAX_ISO :
+                    ((iso_new_o < iso_u) ? iso_u : iso_new_o);
+            dur_new_o = dur_o;
+        }
+        else {
+            if(dur_new_o > MAX_DURATION){
+                dur_new_o = MAX_DURATION;
+                iso_new_o = MIN_ISO + 1;
+            }
+            else {
+                dur_new_o = (dur_new_o < dur_u) ? dur_u : dur_new_o;
+                iso_new_o = iso_o;
+            }
+        }
+        synchronized (this) {
+            currentMeteringParam.overexposeDuration = dur_new_o;
+            currentMeteringParam.overexposeIso = iso_new_o;
+        }
     }
 
     public void finish(){
@@ -297,10 +332,10 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
     /* GETTER & SETTER */
-    public MeteringValues getMeteringValues(){
-        MeteringValues res;
+    public MeteringParam getMeteringValues(){
+        MeteringParam res;
         synchronized (this){
-            res = currentMeteringValues;
+            res = currentMeteringParam;
         }
         return res;
     }
@@ -315,16 +350,16 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
          *
          * @param param contains iso and duration of over and underexposure
          */
-        void onMeterEvent(MeteringValues param);
+        void onMeterEvent(MeteringParam param);
     }
 
-    public class MeteringValues{
+    public class MeteringParam {
         private int underexposeIso;
         private long underexposeDuration;
         private int overexposeIso;
         private long overexposeDuration;
 
-        public MeteringValues(int uIso, long uDuration, int oIso, long oDuration){
+        public MeteringParam(int uIso, long uDuration, int oIso, long oDuration){
             underexposeIso = uIso;
             underexposeDuration = uDuration;
 

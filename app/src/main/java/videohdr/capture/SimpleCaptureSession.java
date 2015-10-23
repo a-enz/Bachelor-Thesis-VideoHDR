@@ -1,6 +1,5 @@
 package videohdr.capture;
 
-import android.bluetooth.BluetoothClass;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
@@ -65,7 +64,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
                     mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, ExposureMeter.FRAME_DURATION);
                     mRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
 
-                    ExposureMeter.MeteringValues param = mExposureMeter.getMeteringValues();
+                    ExposureMeter.MeteringParam param = mExposureMeter.getMeteringValues();
                     mExposureMeter.setMeteringEventListener(SimpleCaptureSession.this);
 
                     setCaptureParameters(param);
@@ -181,14 +180,14 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
      */
-    protected abstract void setCaptureParameters(ExposureMeter.MeteringValues param);
+    protected abstract void setCaptureParameters(ExposureMeter.MeteringParam param);
 
     public void close(){
         mCaptureSession.close();
     }
 
     @Override
-    public void onMeterEvent(ExposureMeter.MeteringValues param) {
+    public void onMeterEvent(ExposureMeter.MeteringParam param) {
         setCaptureParameters(param);
     }
 }

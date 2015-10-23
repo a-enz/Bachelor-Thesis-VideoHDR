@@ -375,6 +375,14 @@ public class HdrCamera {
 
     }
 
+    public void startAutoMetering(){
+        mExposureMeter.startAutoMetering();
+    }
+
+    public void stopAutoMetering(){
+        mExposureMeter.stopAutoMetering();
+    }
+
     public void adjustUnderExposureManually(double factor){
         mExposureMeter.adjustUnderexposure(factor);
     }

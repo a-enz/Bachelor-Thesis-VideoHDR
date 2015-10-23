@@ -39,7 +39,7 @@ public class OverExpCaptureSession extends SimpleCaptureSession{
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
      */
-    protected void setCaptureParameters(ExposureMeter.MeteringValues param){
+    protected void setCaptureParameters(ExposureMeter.MeteringParam param){
         int iso = param.getOverexposeIso();
         long exposureDuration = param.getOverexposeDuration();
 

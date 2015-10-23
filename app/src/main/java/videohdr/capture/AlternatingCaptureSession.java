@@ -45,7 +45,7 @@ public class AlternatingCaptureSession extends SimpleCaptureSession {
      * Create and execute (enqueue) a capture request. These are the only request settings the should
      * be modified during a session
      */
-    protected void setCaptureParameters(ExposureMeter.MeteringValues param){
+    protected void setCaptureParameters(ExposureMeter.MeteringParam param){
 
         int evenIso = param.getUnderexposeIso();
         int oddIso = param.getOverexposeIso();
