@@ -141,7 +141,7 @@ public class HistogramProcessor {
             outputHistogramAllocation.copyTo(frameHist);
 
             //copy to int[] //
-            if (mFrameCounter++ % 15 == 0 && mHistogramListener != null) mHistogramListener.onHistogramAvailable(frameHist);
+            if (/*mFrameCounter++ % 15 == 0 && */mHistogramListener != null) mHistogramListener.onHistogramAvailable(frameHist);
 
 
         }

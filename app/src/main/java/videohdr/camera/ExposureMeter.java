@@ -44,10 +44,25 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     private static final int INITIAL_ODD_ISO = MIN_ISO;
     private static final long INITIAL_ODD_EXPOSURE = MAX_DURATION;
 
-    //evaluation constants
-    private static final int UO_CHANNELS = 4;
-    private static final float RATIO_OVEREXP = 0.2f;
-    private static final float RATIO_UNDEREXP = 0.2f;
+    //EVALUATION VALUES & CONSTANTS
+    //used to evaluate if frame is an over or underexposed frame
+    private static final int UO_CHECK_CHANNELS = 4;
+    private static final float OVEREXP_CHECK_CONFIDENCE = 0.2f;
+    private static final float UNDEREXP_CHECK_CONFIDENCE = 0.2f;
+
+    private float prev_overxp_ratio = 0;
+    private float prev_underexp_ratio = 0;
+
+    //used to evaluate if change to current frame is needed
+    private static final float OVEREXP_UPPER_THRESHHOLD = 0.2f;
+    private static final float OVEREXP_LOWER_THRESHHOLD = 0.2f;
+    private static final float OVEREXP_WELLEXP_THRESHHOLD = 0.2f;
+    private static final float UNDEREXP_UPPER_THRESHHOLD = 0.2f;
+    private static final float UNDEREXP_LOWER_THRESHHOLD = 0.2f;
+    private static final float UNDEREXP_WELLEXP_THRESHHOLD = 0.2f;
+
+
+
 
     //the metering values
     private MeteringParam currentMeteringParam;
@@ -115,58 +130,82 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
         //first log this histogram with the current tag FIXME might be better to disable when not needed for dev
-        if(camState == HdrCamera.CameraState.MODE_RECORD){
+        if(!isAutoMetering && camState == HdrCamera.CameraState.MODE_RECORD){
             logHistogram(frameHistogram);
         }
 
 
-        //compute some metrics about over/underexposure of this frame
-        int underExpAmount = 0;
-        int overExpAmount = 0;
-        int startPos = -1;
-        while(frameHistogram[++startPos]==0);
-        for(int i = startPos; startPos + UO_CHANNELS  > i; i++){
-            underExpAmount += frameHistogram[i];
-        }
-
-        startPos = frameHistogram.length;
-        while(frameHistogram[--startPos]==0);
-        for(int i = startPos; startPos - UO_CHANNELS < i; i--){
-            overExpAmount += frameHistogram[i];
-        }
-
-        float underExpPercent = (float) underExpAmount / totalMeteringPixels;
-        float overExpPercent = (float) overExpAmount / totalMeteringPixels;
-
-
-
-        if(underExpPercent > RATIO_UNDEREXP) {
-            Log.d(TAG, "Underexposed pixels: " + 100*underExpPercent + "%");
-
-            //generate values for underexposed;
-
-        }
-
-        if(overExpPercent > RATIO_OVEREXP) {
-            Log.d(TAG, "Overexposed pixels: " + 100*overExpPercent + "%");
-
-            //generate values for overexposed
-        }
-
         if(isAutoMetering && mCaptureSession != null) {
 
-            //TODO
-            // [ ] detect if current frame is supposed to be over / underexp
-            // [ ] influence exposureParam accordingly
-            // [ ] increasing over /underexp should be easy by checking for threshhold
-            // [ ] implement something to check if we need to reduce overexp / underexp
+            //PRE-EVALUATION CHECKS
+            //check if this frame is supposed to be the over or underexposed
+            int underExpAmount = 0;
+            int overExpAmount = 0;
 
-            if(underExpAmount > RATIO_UNDEREXP){
+            //percentage of pixels deemed severely over/underexposed
+            int startPos = -1;
+            while(frameHistogram[++startPos]==0); //this line is used to circumvent weird camera behaviour
+            for(int i = startPos; startPos + UO_CHECK_CHANNELS > i; i++){
+                underExpAmount += frameHistogram[i];
+            }
 
+            startPos = frameHistogram.length;
+            while(frameHistogram[--startPos]==0); //this line is used to circumvent weird camera behaviour
+            for(int i = startPos; startPos - UO_CHECK_CHANNELS < i; i--){
+                overExpAmount += frameHistogram[i];
+            }
+
+            float underExpRatio = (float) underExpAmount / totalMeteringPixels;
+            float overExpRatio = (float) overExpAmount / totalMeteringPixels;
+
+            //stop evaluation if this was the first frame
+            if(prev_overxp_ratio == 0 && prev_underexp_ratio == 0) {
+                //set values for next evaluation
+                prev_underexp_ratio = underExpRatio;
+                prev_overxp_ratio = overExpRatio;
+                Log.d(TAG, "First automatic evaluation of a frame");
+                return;
+            }
+
+            boolean isUnderExposed = underExpRatio > prev_underexp_ratio &&
+                                    overExpRatio < prev_overxp_ratio;
+
+            boolean isOverExposed = underExpRatio < prev_underexp_ratio &&
+                                    overExpRatio > prev_overxp_ratio;
+
+            //stop evaluating if not sure if frame is under or overexp
+            if(isUnderExposed == isOverExposed) {
+                Log.d(TAG, "NOT sure about this frame: underexp " + underExpRatio +
+                        " || overexp " + overExpRatio);
+                return; //inconclusive, we don't evaluate further
+            }
+
+            // influence underexp values
+            if(isUnderExposed) {
+                Log.d(TAG, "This frame is: UNDER exposed");
+            }
+
+            // influence overexp values
+            if(isOverExposed) {
+                Log.d(TAG, "This frame is: OVER exposed");
             }
 
 
-            mCaptureSession.onMeterEvent(currentMeteringParam);
+            //set values for next evaluation
+            prev_underexp_ratio = underExpRatio;
+            prev_overxp_ratio = overExpRatio;
+
+            /*influence the camera capture settings - at most every 2nd evaluation run
+            * which means every second frame. It wouldn't make sense to do it every time
+            * since the camera changes the capture values only after a burst (in this case consisting
+            * of 2 frames, is finished) */
+            if(histogramTAG % 2 == 0) {
+                mCaptureSession.onMeterEvent(currentMeteringParam);
+            }
+        }
+        else { //not auto metering: reset values of previous frame
+            prev_overxp_ratio = 0;
+            prev_underexp_ratio = 0;
         }
     }
 
