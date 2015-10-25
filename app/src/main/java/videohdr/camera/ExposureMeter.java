@@ -46,19 +46,18 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //EVALUATION VALUES & CONSTANTS
     //used to evaluate if frame is an over or underexposed frame
-    private static final int UO_CHECK_CHANNELS = 4;
-    private static final float OVEREXP_RATIO_THRESH = 0.005f;
-    private static final float UNDEREXP_RATIO_THRESH = 0.005f;
+    private static final int BAD_EXP_CHECK_CHANNELS = 4;
+    private static final int WELL_EXP_CHECK_CHANNELS = 70;
 
     private float prev_mean_brightness = 0;
 
     //used to evaluate if change to current frame is needed
-    private static final float OVEREXP_UPPER_THRESHHOLD = 0.2f;
-    private static final float OVEREXP_LOWER_THRESHHOLD = 0.2f;
-    private static final float OVEREXP_WELLEXP_THRESHHOLD = 0.2f;
-    private static final float UNDEREXP_UPPER_THRESHHOLD = 0.2f;
-    private static final float UNDEREXP_LOWER_THRESHHOLD = 0.2f;
-    private static final float UNDEREXP_WELLEXP_THRESHHOLD = 0.2f;
+    private static final float OVEREXP_UPPER_THRESHOLD = 0.1f;
+    private static final float OVEREXP_LOWER_THRESHOLD = 0.1f;
+    private static final float OVEREXP_WELLEXP_THRESHOLD = 0.1f;
+    private static final float UNDEREXP_UPPER_THRESHOLD = 0.1f;
+    private static final float UNDEREXP_LOWER_THRESHOLD = 0.1f;
+    private static final float UNDEREXP_WELLEXP_THRESHOLD = 0.1f;
 
 
 
@@ -68,9 +67,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //auto metering values
     private boolean isAutoMetering;
-    private static final double AUTO_EXP_INC_FACTOR_WEAK = 1.001f;
+    private static final double AUTO_EXP_INC_FACTOR_WEAK = 1.1f;
     private static final double AUTO_EXP_INC_FACTOR_STRONG = 1.02f;
-    private static final double AUTO_EXP_DEC_FACTOR_WEAK = 0.999f;
+    private static final double AUTO_EXP_DEC_FACTOR_WEAK = 0.9;
     private static final double AUTO_EXP_DEC_FACTOR_STRONG = 0.98f;
 
     //Histogram processor
@@ -141,30 +140,8 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             int brightnessSum = 0;
             for(int i = 0; i < frameHistogram.length; i++){
                 brightnessSum += frameHistogram[i] * i;
-                //TODO pack more into this so that we don't have to loop over the hist several times
             }
             float mean_brightness = (float) brightnessSum / totalMeteringPixels;
-
-            //PRE-EVALUATION CHECKS
-            //check if this frame is supposed to be the over or underexposed
-            int underExpAmount = 0;
-            int overExpAmount = 0;
-
-            //percentage of pixels deemed severely over/underexposed
-            int startPos = -1;
-            while(frameHistogram[++startPos]==0); //this line is used to circumvent weird camera behaviour
-            for(int i = startPos; startPos + UO_CHECK_CHANNELS > i; i++){
-                underExpAmount += frameHistogram[i];
-            }
-
-            startPos = frameHistogram.length;
-            while(frameHistogram[--startPos]==0); //this line is used to circumvent weird camera behaviour
-            for(int i = startPos; startPos - UO_CHECK_CHANNELS < i; i--){
-                overExpAmount += frameHistogram[i];
-            }
-
-            float underExpRatio = (float) underExpAmount / totalMeteringPixels;
-            float overExpRatio = (float) overExpAmount / totalMeteringPixels;
 
             //stop evaluation if this was the first frame
             if(prev_mean_brightness == 0) {
@@ -174,15 +151,15 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 return;
             }
 
-            boolean isUnderExposedFrame = prev_mean_brightness > mean_brightness * 1.01f; //leave some wiggle room
-            boolean isOverExposedFrame = prev_mean_brightness < mean_brightness * 0.99f;
+            boolean isUnderExposedFrame = mean_brightness < prev_mean_brightness * 0.99f; //leave some wiggle room
+            boolean isOverExposedFrame = mean_brightness > prev_mean_brightness * 1.01f;
 
             if(!isOverExposedFrame && !isUnderExposedFrame){ //can't decide, brightness levels too similar
                 //initiate general spread of capture parameters
                 if(histogramTAG % 2 == 0){
                     Log.d(TAG, "initiating spread in frame brightness");
-                    changeOverExpParam(AUTO_EXP_INC_FACTOR_STRONG);
-                    changeUnderExpParam(AUTO_EXP_DEC_FACTOR_STRONG);
+                    changeOverExpParamAndSignalSuccess(AUTO_EXP_INC_FACTOR_STRONG);
+                    changeUnderExpParamAndSignalSuccess(AUTO_EXP_DEC_FACTOR_STRONG);
                     mCaptureSession.onMeterEvent(currentMeteringParam);
                 }
                 return;
@@ -191,16 +168,84 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             /*from this point on 'isOverExposedFrame != isUnderExposedFrame' should hold
             * since not both of them can be true (see initialization of those values)*/
 
-            // influence underexp values
+
+            boolean paramsChanged = false;
+
+            //Either this:  influence underexp values ...
             if(isUnderExposedFrame) {
                 Log.d(TAG, "This frame is: UNDER exposed. Mean brightness: " + mean_brightness);
 
+                int overExpAmount = 0;
+                int betterExpAmount = 0;
 
+                int startPos = frameHistogram.length;
+                while(frameHistogram[--startPos]==0); //this line is used to circumvent weird HW or RS behaviour
+                int endPos = startPos - BAD_EXP_CHECK_CHANNELS;
+                for(int i = startPos; endPos < i; i--){ //check bad exposure channels
+                    if(i < 0) break;
+                    overExpAmount += frameHistogram[i];
+                }
+
+                startPos = endPos;
+                endPos = endPos - WELL_EXP_CHECK_CHANNELS;
+
+                for(int i = startPos; endPos < i; i--){
+                    if(i < 0) break;
+                    betterExpAmount += frameHistogram[i];
+                }
+
+                float overExpRatio = (float) overExpAmount / totalMeteringPixels;
+                float betterExpRatio = (float) betterExpAmount / totalMeteringPixels;
+
+                double factor = 1;
+                if(overExpRatio >= OVEREXP_LOWER_THRESHOLD) {
+                    factor = AUTO_EXP_DEC_FACTOR_WEAK;
+                }
+                else {
+                    if(betterExpRatio <= UNDEREXP_WELLEXP_THRESHOLD){
+                        factor = AUTO_EXP_INC_FACTOR_WEAK;
+                    }
+                }
+                paramsChanged = changeUnderExpParamAndSignalSuccess(factor);
             }
 
-            //influence overexp values
+            //..OR this: influence overexp values
             if(isOverExposedFrame) {
                 Log.d(TAG, "This frame is: OVER exposed. Mean brightness: " + mean_brightness);
+
+                int underExpAmount = 0;
+                int betterExpAmount = 0;
+
+                //percentage of pixels deemed severely over/underexposed
+                int startPos = -1;
+                while(frameHistogram[++startPos]==0); //this line is used to circumvent weird HW or RS behaviour
+                int endPos = startPos + BAD_EXP_CHECK_CHANNELS;
+                for(int i = startPos; endPos > i; i++) {
+                    if(i >= frameHistogram.length) break;
+                    underExpAmount += frameHistogram[i];
+                }
+
+                startPos = endPos;
+                endPos = endPos + WELL_EXP_CHECK_CHANNELS;
+
+                for(int i = startPos; endPos > i; i++){
+                    if(i >= frameHistogram.length) break;
+                    betterExpAmount += frameHistogram[i];
+                }
+
+                float underExpRatio = (float) underExpAmount / totalMeteringPixels;
+                float betterExpRatio = (float) betterExpAmount / totalMeteringPixels;
+
+                double factor = 1;
+                if(underExpRatio >= UNDEREXP_LOWER_THRESHOLD) {
+                    factor = AUTO_EXP_INC_FACTOR_WEAK;
+                }
+                else {
+                    if(betterExpRatio <= OVEREXP_WELLEXP_THRESHOLD){
+                        factor = AUTO_EXP_DEC_FACTOR_WEAK;
+                    }
+                }
+                paramsChanged = changeOverExpParamAndSignalSuccess(factor);
             }
 
 
@@ -212,7 +257,8 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             * which means every second frame. It wouldn't make sense to do it every time
             * since the camera changes the capture values only after a burst (in this case consisting
             * of 2 frames, is finished) */
-            if(histogramTAG % 2 == 0) {
+            if(histogramTAG % 2 == 0 && paramsChanged) {
+                Log.d(TAG, "new capture values: " + currentMeteringParam.toString());
                 mCaptureSession.onMeterEvent(currentMeteringParam);
             }
         }
@@ -276,19 +322,22 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     public void adjustOverexposure(double factor){
         if(mCaptureSession == null) return;
 
-        changeOverExpParam(factor); //values will be stored in 'currentMeteringParam'
+        if(changeOverExpParamAndSignalSuccess(factor)) { //values will be stored in 'currentMeteringParam'
 
-        Log.d(TAG, currentMeteringParam.toString());
-        mCaptureSession.onMeterEvent(currentMeteringParam);
+            Log.d(TAG, "OverExp values have changed: " + currentMeteringParam.toString());
+            mCaptureSession.onMeterEvent(currentMeteringParam);
+        }
     }
 
     public void adjustUnderexposure(double factor){
         if(mCaptureSession == null) return;
 
-        changeUnderExpParam(factor); //values will be stored in 'currentMeteringParam'
 
-        Log.d(TAG, currentMeteringParam.toString());
-        mCaptureSession.onMeterEvent(currentMeteringParam);
+        if(changeUnderExpParamAndSignalSuccess(factor)) {//values will be stored in 'currentMeteringParam'
+
+            Log.d(TAG, "UnderExp changed: " + currentMeteringParam.toString());
+            mCaptureSession.onMeterEvent(currentMeteringParam);
+        }
     }
 
     public void startAutoMetering(){
@@ -299,8 +348,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
         isAutoMetering = false;
     }
 
-    private void changeUnderExpParam(double factor){
+    private boolean changeUnderExpParamAndSignalSuccess(double factor){
         Log.d(TAG, "adjusting UNDER exp by factor " + factor);
+        if(factor == 1) return false;
         long dur_o;
         long dur_u;
         int iso_o;
@@ -330,14 +380,19 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             }
         }
 
+        boolean haveValuesChanged = (currentMeteringParam.underexposeDuration != dur_new_u) ||
+                (currentMeteringParam.underexposeIso != iso_new_u);
+
         synchronized (this){
             currentMeteringParam.underexposeDuration = dur_new_u;
             currentMeteringParam.underexposeIso = iso_new_u;
         }
+        return haveValuesChanged;
     }
 
-    private void changeOverExpParam(double factor){
+    private boolean changeOverExpParamAndSignalSuccess(double factor){
         Log.d(TAG, "adjusting OVER exp by factor " + factor);
+        if(factor == 1) return false;
         long dur_o;
         long dur_u;
         int iso_o;
@@ -366,10 +421,14 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 iso_new_o = iso_o;
             }
         }
+
+        boolean haveValuesChanged = (currentMeteringParam.overexposeDuration != dur_new_o) ||
+                (currentMeteringParam.overexposeIso != iso_new_o);
         synchronized (this) {
             currentMeteringParam.overexposeDuration = dur_new_o;
             currentMeteringParam.overexposeIso = iso_new_o;
         }
+        return haveValuesChanged;
     }
 
     public void finish(){
