@@ -49,18 +49,22 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     private static final int BAD_EXP_CHECK_CHANNELS = 4;
     private static final int WELL_EXP_CHECK_CHANNELS = 70;
 
+    private static final int UNDEREXP_SEARCH_CAP = 25;
+    private static final int OVEREXP_SEARCH_CAP = 230;
+
     private float prev_mean_brightness = 0;
+    private boolean prev_paramsChanged = false;
 
     //used to evaluate if change to current frame is needed
+    //evaluate underexposed frame
     private static final float OVEREXP_UPPER_THRESHOLD = 0.1f;
-    private static final float OVEREXP_LOWER_THRESHOLD = 0.1f;
+    private static final float OVEREXP_LOWER_THRESHOLD = 0.05f;
+    private static final float UNDEREXP_WELLEXP_THRESHOLD = 0.2f;
+
+    //evaluate overexposed frame
+    private static final float UNDEREXP_UPPER_THRESHOLD = 0.07f;
+    private static final float UNDEREXP_LOWER_THRESHOLD = 0.03f;
     private static final float OVEREXP_WELLEXP_THRESHOLD = 0.1f;
-    private static final float UNDEREXP_UPPER_THRESHOLD = 0.1f;
-    private static final float UNDEREXP_LOWER_THRESHOLD = 0.1f;
-    private static final float UNDEREXP_WELLEXP_THRESHOLD = 0.1f;
-
-
-
 
     //the metering values
     private MeteringParam currentMeteringParam;
@@ -68,9 +72,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     //auto metering values
     private boolean isAutoMetering;
     private static final double AUTO_EXP_INC_FACTOR_WEAK = 1.1f;
-    private static final double AUTO_EXP_INC_FACTOR_STRONG = 1.02f;
+    private static final double AUTO_EXP_INC_FACTOR_STRONG = 1.2f;
     private static final double AUTO_EXP_DEC_FACTOR_WEAK = 0.9;
-    private static final double AUTO_EXP_DEC_FACTOR_STRONG = 0.98f;
+    private static final double AUTO_EXP_DEC_FACTOR_STRONG = 0.8f;
 
     //Histogram processor
     private HistogramProcessor mHistProc = null; //has to be created by setupHistogramProcessor
@@ -179,7 +183,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 int betterExpAmount = 0;
 
                 int startPos = frameHistogram.length;
-                while(frameHistogram[--startPos]==0); //this line is used to circumvent weird HW or RS behaviour
+                while(frameHistogram[--startPos]==0){ //this loop is used to circumvent weird HW or RS behaviour
+                    if(startPos < OVEREXP_SEARCH_CAP) break;
+                }
                 int endPos = startPos - BAD_EXP_CHECK_CHANNELS;
                 for(int i = startPos; endPos < i; i--){ //check bad exposure channels
                     if(i < 0) break;
@@ -198,13 +204,16 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 float betterExpRatio = (float) betterExpAmount / totalMeteringPixels;
 
                 double factor = 1;
-                if(overExpRatio >= OVEREXP_LOWER_THRESHOLD) {
+                if(overExpRatio >= OVEREXP_UPPER_THRESHOLD) {
                     factor = AUTO_EXP_DEC_FACTOR_WEAK;
                 }
                 else {
-                    if(betterExpRatio <= UNDEREXP_WELLEXP_THRESHOLD){
+
+                    if(betterExpRatio <= UNDEREXP_WELLEXP_THRESHOLD &&
+                            overExpRatio <= OVEREXP_LOWER_THRESHOLD){
                         factor = AUTO_EXP_INC_FACTOR_WEAK;
                     }
+
                 }
                 paramsChanged = changeUnderExpParamAndSignalSuccess(factor);
             }
@@ -218,7 +227,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
                 //percentage of pixels deemed severely over/underexposed
                 int startPos = -1;
-                while(frameHistogram[++startPos]==0); //this line is used to circumvent weird HW or RS behaviour
+                while(frameHistogram[++startPos]==0) { //this loop is used to circumvent weird HW or RS behaviour
+                    if(startPos > UNDEREXP_SEARCH_CAP) break;
+                }
                 int endPos = startPos + BAD_EXP_CHECK_CHANNELS;
                 for(int i = startPos; endPos > i; i++) {
                     if(i >= frameHistogram.length) break;
@@ -237,33 +248,36 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 float betterExpRatio = (float) betterExpAmount / totalMeteringPixels;
 
                 double factor = 1;
-                if(underExpRatio >= UNDEREXP_LOWER_THRESHOLD) {
+                if(underExpRatio >= UNDEREXP_UPPER_THRESHOLD) {
                     factor = AUTO_EXP_INC_FACTOR_WEAK;
                 }
                 else {
-                    if(betterExpRatio <= OVEREXP_WELLEXP_THRESHOLD){
+                    if(betterExpRatio <= OVEREXP_WELLEXP_THRESHOLD &&
+                            underExpRatio <= UNDEREXP_LOWER_THRESHOLD){
                         factor = AUTO_EXP_DEC_FACTOR_WEAK;
                     }
+
                 }
                 paramsChanged = changeOverExpParamAndSignalSuccess(factor);
             }
-
-
-
-            //set values for next evaluation
-            prev_mean_brightness = mean_brightness;
 
             /*influence the camera capture settings - at most every 2nd evaluation run
             * which means every second frame. It wouldn't make sense to do it every time
             * since the camera changes the capture values only after a burst (in this case consisting
             * of 2 frames, is finished) */
-            if(histogramTAG % 2 == 0 && paramsChanged) {
+            if(histogramTAG % 2 == 0 && (paramsChanged || prev_paramsChanged)) {
                 Log.d(TAG, "new capture values: " + currentMeteringParam.toString());
                 mCaptureSession.onMeterEvent(currentMeteringParam);
             }
+
+
+            //set values for next evaluation
+            prev_mean_brightness = mean_brightness;
+            prev_paramsChanged = paramsChanged;
         }
         else { //not auto metering: reset values of previous frame
             prev_mean_brightness = 0;
+            prev_paramsChanged = false;
         }
     }
 
