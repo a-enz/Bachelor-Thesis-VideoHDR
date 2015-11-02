@@ -34,8 +34,8 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
     //bounds for exposure time and iso
-    private static final long MAX_DURATION = FRAME_DURATION / 4;
-    private static final int MAX_ISO = 1200;
+    private static final long MAX_DURATION = FRAME_DURATION / 2;
+    private static final int MAX_ISO = 1800;
     private static final int MIN_ISO = 80;
 
     //initial exposure time and iso
@@ -46,7 +46,8 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //EVALUATION VALUES & CONSTANTS
     //used to evaluate if frame is an over or underexposed frame
-    private static final int BAD_EXP_CHECK_CHANNELS = 20;
+    private static final int BAD_EXP_CHECK_CHANNELS_UE = 10;
+    private static final int BAD_EXP_CHECK_CHANNELS_OE = 20;
     private static final int WELL_EXP_CHECK_CHANNELS = 100;
 
     private static final int UNDEREXP_SEARCH_CAP = 25;
@@ -57,9 +58,9 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     //used to evaluate if change to current frame is needed
     //evaluate underexposed frame
-    private static final float OVEREXP_UPPER_THRESHOLD = 0.01f;
-    private static final float OVEREXP_LOWER_THRESHOLD = 0.003f;
-    private static final float UNDEREXP_WELLEXP_THRESHOLD = 0.2f;
+    private static final float OVEREXP_UPPER_THRESHOLD = 0.02f;
+    private static final float OVEREXP_LOWER_THRESHOLD = 0.006f;
+    private static final float UNDEREXP_WELLEXP_THRESHOLD = 0.1f;
 
     //evaluate overexposed frame
     private static final float UNDEREXP_UPPER_THRESHOLD = 0.02f;
@@ -136,10 +137,12 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
 
+        /*
         //first log this histogram with the current tag FIXME might be better to disable when not needed for dev
         if(!isAutoMetering && camState == HdrCamera.CameraState.MODE_RECORD){
             logHistogram(frameHistogram);
         }
+        */
 
 
         if(isAutoMetering && mCaptureSession != null) {
@@ -194,7 +197,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 while(frameHistogram[--startPos]==0){ //this loop is used to circumvent weird HW or RS behaviour
                     if(startPos < OVEREXP_SEARCH_CAP) break;
                 }
-                int endPos = startPos - BAD_EXP_CHECK_CHANNELS;
+                int endPos = startPos - BAD_EXP_CHECK_CHANNELS_OE;
                 for(int i = startPos; endPos < i; i--){ //check bad exposure channels
                     if(i < 0) break;
                     overExpAmount += frameHistogram[i];
@@ -238,7 +241,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
                 while(frameHistogram[++startPos]==0) { //this loop is used to circumvent weird HW or RS behaviour
                     if(startPos > UNDEREXP_SEARCH_CAP) break;
                 }
-                int endPos = startPos + BAD_EXP_CHECK_CHANNELS;
+                int endPos = startPos + BAD_EXP_CHECK_CHANNELS_UE;
                 for(int i = startPos; endPos > i; i++) {
                     if(i >= frameHistogram.length) break;
                     underExpAmount += frameHistogram[i];
