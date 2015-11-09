@@ -25,6 +25,11 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
     private static final String TAG = "ExposureMeter";
 
+    /* dev option to log histograms to a file,
+    * should be disabled since it interferes with resource
+    * management of MediaRecord*/
+    private static final boolean histLogEnabled = false;
+
     //timing constants
     private static final long MICRO_SECOND = 1000;
     private static final long MILLI_SECOND = MICRO_SECOND * 1000;
@@ -98,15 +103,17 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     public ExposureMeter(HdrCamera camera){
         mCamera = camera;
 
-        File logFile = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DCIM + "/Camera/HistLOG_" +
-                        new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".txt");
+        if(histLogEnabled) {
+            File logFile = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DCIM + "/Camera/HistLOG_" +
+                            new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".txt");
 
-        try{
-            logFileWriter = new BufferedWriter(new FileWriter(logFile, true));
-        } catch (IOException e){
-            Log.d(TAG, "error creating the LogFileWriter");
-            logFileWriter = null;
+            try {
+                logFileWriter = new BufferedWriter(new FileWriter(logFile, true));
+            } catch (IOException e) {
+                Log.d(TAG, "error creating the LogFileWriter");
+                logFileWriter = null;
+            }
         }
 
         synchronized (this){
@@ -137,12 +144,12 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
 
 
-        /*
-        //first log this histogram with the current tag FIXME might be better to disable when not needed for dev
-        if(!isAutoMetering && camState == HdrCamera.CameraState.MODE_RECORD){
+
+        //first log this histogram with the current tag
+        if(histLogEnabled && !isAutoMetering && camState == HdrCamera.CameraState.MODE_RECORD){
             logHistogram(frameHistogram);
         }
-        */
+
 
 
         if(isAutoMetering && mCaptureSession != null) {
