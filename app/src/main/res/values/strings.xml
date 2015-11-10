@@ -1,13 +1,12 @@
 <resources>
     <!-- General Resources-->
     <string name="app_name">VideoHDR</string>
-    <string name="action_settings">Settings</string>
 
     <!--VideoHdrFragment Resources-->
     <string name="record">Record</string>
     <string name="b_text_overexpose">O-Exp</string>
     <string name="b_text_underexpose">U-Exp</string>
-    <string name="b_text_return">Return</string>
+    <string name="b_text_return">Fuse</string>
     <string name="stop">Stop</string>
     <string name="title_auto_exp">AutoExp\nToggle</string>
 </resources>

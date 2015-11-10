@@ -18,7 +18,7 @@ import videohdr.camera.HdrCamera;
  * a Thread handling the operation.
  *
  * Later on only parameters for frame exposure should be changed (like iso, exposure time)
- * Created by andi on 14.08.2015.
+ * Created by Andreas Enz on 14.08.2015.
  */
 public class AlternatingCaptureSession extends SimpleCaptureSession {
     private static final String TAG = "AlternatingCapSess";
@@ -67,6 +67,8 @@ public class AlternatingCaptureSession extends SimpleCaptureSession {
 
         try {
             Log.d(TAG, "trying to change parameters for alternating capture session");
+            /* starting a repeating burst (in this specific class consisting of two exposures repeated
+            until a new capture request is provided*/
             mCaptureSession.setRepeatingBurst(mDoubleExposure, mCaptureCallback, mCameraHandler);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED setRepeatingBurst");

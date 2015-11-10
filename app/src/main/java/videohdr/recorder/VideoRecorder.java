@@ -16,15 +16,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by andi on 13.07.2015.
+ * Created by Andreas Enz on 13.07.2015.
  *
  * Wrapper Class for whatever is used to capture frames
- * For now this is implemented with {@link MediaRecorder} for simplicity.Usage of this
- * wrapper class is the same as for MediaRecorder detailed on Android API
+ * For now this is implemented with {@link MediaRecorder} for simplicity. Usage of this
+ * wrapper class is the same as for MediaRecorder detailed on Android API.
  * Later on I might use {@link android.media.MediaCodec} for more in depth control over
  * the video frames.
  *
- * This class takes care of storing the file (and generating metadata of the frames)
+ * This class takes care of storing the file and configuring the MediaRecorder
  */
 public class VideoRecorder {
     private static final String TAG = "VideoRecorder";
@@ -62,10 +62,11 @@ public class VideoRecorder {
 
 
     /**
-     * Set up MediaRecorder with predefined Values
+     * Set up MediaRecorder with predefined Values. Some of this function calls
+     * have to be in a specific order, which is detailed in the android API
      * @param rotation screen rotation
-     * @param width
-     * @param height
+     * @param width of the frames
+     * @param height of the frames
      * @throws IOException
      */
     private void setupRecorder(int rotation, int width, int height) throws IOException {
@@ -85,15 +86,29 @@ public class VideoRecorder {
         mRecorder.prepare();
     }
 
+    /**
+     * This surface is used to receive output from the camera
+     * @return surface object where input to the video recorder can be given
+     */
     public Surface getRecorderSurface(){
         return mRecorder.getSurface();
     }
 
+    /**
+     * start recoding a video
+     * @throws IllegalStateException
+     */
     public void start() throws IllegalStateException {
         Log.d(TAG, "Thread start() is running on : " +Thread.currentThread().getName());
         mRecorder.start();
     }
 
+    /**
+     * Stop recording video. Reset the MediaRecorder to its initial state.
+     * Name the video file with the timestamp when the recording ended and register the file
+     * in the file system.
+     * @throws IllegalStateException
+     */
     public void stop() throws IllegalStateException {
 
         mRecorder.stop();
@@ -119,6 +134,9 @@ public class VideoRecorder {
         );
     }
 
+    /**
+     * Release the MediaRecorder resources
+     */
     public void release(){
         mRecorder.release();
         mRecorder = null;

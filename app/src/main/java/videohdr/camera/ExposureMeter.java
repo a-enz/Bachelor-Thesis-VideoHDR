@@ -19,7 +19,7 @@ import videohdr.renderscript.HistogramProcessor;
 /**
  * Evaluates output from Histogram Processor and influences input values to AlternatingCaptureSession
  * (ISO and exposure time of bright/dark frame)
- * Created by andi on 13.07.2015.
+ * Created by Andreas Enz on 13.07.2015.
  */
 public class ExposureMeter implements HistogramProcessor.EventListener {
 

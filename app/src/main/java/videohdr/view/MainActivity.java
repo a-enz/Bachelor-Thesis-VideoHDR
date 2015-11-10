@@ -6,6 +6,10 @@ import android.os.Bundle;
 
 public class MainActivity extends Activity {
 
+    /**
+     * Create the VideoHdrFragment. All the view logic can be found in there
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

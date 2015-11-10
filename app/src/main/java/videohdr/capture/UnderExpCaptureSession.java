@@ -12,7 +12,9 @@ import videohdr.camera.ExposureMeter;
 import videohdr.camera.HdrCamera;
 
 /**
- * Created by andi on 12.09.2015.
+ * Class to influence capture settings while the camera is in the
+ * Underexposed mode
+ * Created by Andreas Enz on 12.09.2015.
  */
 public class UnderExpCaptureSession extends SimpleCaptureSession {
     private static final String TAG = "OECapSess";
@@ -49,6 +51,7 @@ public class UnderExpCaptureSession extends SimpleCaptureSession {
         CaptureRequest mSingleExposure = mRequestBuilder.build();
 
         try {
+            //set a repeating request (single request, repeated until a new request is provided)
             mCaptureSession.setRepeatingRequest(mSingleExposure, mCaptureCallback, mCameraHandler);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED setRepeating");

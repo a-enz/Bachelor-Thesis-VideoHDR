@@ -26,7 +26,7 @@ import videohdr.recorder.VideoRecorder;
 import videohdr.recorder.VideoSizeConfiguration;
 
 /**
- * Created by andi on 13.07.2015.
+ * Created by Andreas Enz on 13.07.2015.
  *
  * Any method concerning the camera hardware should go in here.
  *

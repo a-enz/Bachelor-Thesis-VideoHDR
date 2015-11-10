@@ -1,5 +1,11 @@
 package videohdr.view;
 
+/**
+ * The main view class, holding all the button logic and swipe control of the application.
+ * This class is based on the GoogleSamples 'Camera2Video' and Camera2Basics
+ * (https://github.com/googlesamples/android-Camera2Basic,
+ * https://github.com/googlesamples/android-Camera2Video)
+ */
 import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Matrix;
@@ -22,9 +28,6 @@ import android.widget.Switch;
 import videohdr.camera.HdrCamera;
 
 
-/**
- * A placeholder fragment containing a simple view.
- */
 public class VideoHdrFragment extends Fragment implements View.OnClickListener, HdrCamera.ConfigurePreviewListener {
 
     public static final String TAG = "VideoHdrFragment";
@@ -45,13 +48,17 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     private AutoFitTextureView mTextureView;
 
     /**
-     * Button to start/stop video recording
+     * Buttons to start/stop video recording and switch to under/overexposed mode
      */
     private Button mRecordButton;
     private Button mOverexposeButton;
     private Button mUnderexposeButton;
 
+    /**
+     * Switch to toggle auto-exposure mode
+     */
     private Switch mAutoExpSwitch;
+
 
     private Size mPreviewSize;
 
@@ -66,10 +73,10 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
 
+            //as soon as the texture is available we open the camera
             mHdrCamera.openCamera(mTextureView);
             /*all other surfaces should be created from HdrCamera*/
             Log.d(TAG, "onSurfaceTextureAvailable: CAMERA open");
-            //mHdrCamera.configurePreview(mTextureView, width, height); not here!
         }
 
         @Override
@@ -139,7 +146,8 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      */
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        //set up UI elements
+
+        //set up UI elements (Buttons and switches)
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
         mTextureView.setGestureListener(getActivity(), mViewListener);
 
@@ -153,14 +161,16 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         mUnderexposeButton.setOnClickListener(this);
 
         mAutoExpSwitch = (Switch)  view.findViewById(R.id.sw_auto_exp);
+
+        //set a listener for the auto exposure switch state)
         mAutoExpSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) { //disable some buttons, start metering
+                if (isChecked) { //disable over/underexp. buttons, start metering
                     mUnderexposeButton.setEnabled(false);
                     mOverexposeButton.setEnabled(false);
                     mHdrCamera.startAutoMetering();
-                } else { //enable them again, stop metering
+                } else { //enable buttons again, stop metering
                     mUnderexposeButton.setEnabled(true);
                     mOverexposeButton.setEnabled(true);
                     mHdrCamera.stopAutoMetering();
@@ -170,6 +180,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
         if(savedInstanceState != null){
             Log.d(TAG, "restoring button states");
+            //restore button states (enabled/disabled, text displayed)
             mRecordButton.setEnabled(savedInstanceState.getBoolean(BUTTON_RECORD_ENABLED));
             mOverexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_OVEREXP_ENABLED));
             mUnderexposeButton.setEnabled(savedInstanceState.getBoolean(BUTTON_UNDEREXP_ENABLED));
@@ -205,6 +216,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         Log.d(TAG, "saving button states");
+        //Save button states
         //save enabled state
         outState.putBoolean(BUTTON_RECORD_ENABLED, mRecordButton.isEnabled());
         outState.putBoolean(BUTTON_OVEREXP_ENABLED, mOverexposeButton.isEnabled());
@@ -219,7 +231,11 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         super.onSaveInstanceState(outState);
     }
 
-    //Listener for scroll events so that we can manually adjust over/underexpose parameters
+    /**
+     * Listener for scroll events so that the user can manually adjust over/underexpose parameters.
+     * This listener will only trigger changes in MODE_UNDEREXPOSE or MODE_OVEREXPOSE
+     */
+
     private GestureDetector.OnGestureListener mViewListener
             = new GestureDetector.SimpleOnGestureListener() {
 
@@ -239,6 +255,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             if(camState == HdrCamera.CameraState.MODE_UNDEREXPOSE
                     || camState == HdrCamera.CameraState.MODE_OVEREXPOSE) {
 
+                //calculate how much the exposure should be scaled up/down from the motion event
                 float height = mTextureView.getHeight();
 
                 float yDistNorm = distanceY / height;
@@ -246,6 +263,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 final float ACCELERATION_FACTOR = 8;
                 double scaleFactor = Math.pow(2.f, yDistNorm * ACCELERATION_FACTOR);
 
+                //depending on the camera mode change the exposure of the corresponding frame
                 switch(camState){
                     case MODE_UNDEREXPOSE:{
                         mHdrCamera.adjustUnderExposureManually(scaleFactor);
@@ -264,19 +282,25 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
 
 
     /**
-     * Only one button is available right now, record start/stop. Here the recording should
-     * be started while the Camera is already capturing Frames in the background like it would for the
-     * recording. That is because we also need to provide a preview and do some exposure metering to
-     * get hopefully good parameter settings for the actual recorded part
-     * @param v
+     * Three buttons are available which are controlled in this method:
+     * - RECORD/STOP: (start/stop recoding video)
+     * - O-EXP/FUSE: (overexposed mode and back to fuse mode)
+     * - U-EXP/FUSE: (underexposed mode and back to fuse mode)
+     * The buttons are only clickable in certain camera states and trigger state changes when
+     * pressed. Auto exposure is not a real camera mode itself, but will simply disable the O-EXP and
+     * U-EXP button. A simple graphical representation of the state machine can be seen in my
+     * Bachelor Thesis.
      */
     @Override
     public void onClick(View v) {
         int viewID = v.getId();
 
         switch(mHdrCamera.getCameraState()){
+            /*while fusing all three buttons are clickable
+            * (unless auto-exp is activated, then only record is enabled)*/
             case MODE_FUSE:{
                 switch (viewID){
+                    //start recoding, disable all other buttons
                     case R.id.b_record: {
                         mHdrCamera.startRecording();
                         mRecordButton.setText(R.string.stop);
@@ -285,6 +309,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                         mUnderexposeButton.setEnabled(false);
                         break;
                     }
+                    //underexpose mode, disable record button
                     case R.id.b_underexpose: {
                         mAutoExpSwitch.setEnabled(false);
                         mHdrCamera.startUnderexposeCapture();
@@ -292,6 +317,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                         mRecordButton.setEnabled(false);
                         break;
                     }
+                    //overexpose mode, disable record button
                     case R.id.b_overexpose: {
                         mAutoExpSwitch.setEnabled(false);
                         mHdrCamera.startOverexposeCapture();
@@ -303,8 +329,12 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 }
                 break;
             }
+            /* in underexpose mode we can either switch back to fuse mode
+            * or directly to overexpose mode
+            * (while in this mode no auto-exp is possible) */
             case MODE_UNDEREXPOSE: {
                 switch (viewID){
+                    //switch back to fuse mode
                     case R.id.b_underexpose: {
                         mAutoExpSwitch.setEnabled(true);
                         mHdrCamera.startFuseCapture();
@@ -312,6 +342,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                         mRecordButton.setEnabled(true);
                         break;
                     }
+                    //switch directly to overexpose mode
                     case R.id.b_overexpose: {
                         mHdrCamera.startOverexposeCapture();
                         mOverexposeButton.setText(R.string.b_text_return);
@@ -322,6 +353,9 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 }
                 break;
             }
+            /* in overexpose mode we can either switch back to fuse mode
+            * or directly to underexpose mode
+            * (while in this mode no auto-exp is possible) */
             case MODE_OVEREXPOSE:{
                 mAutoExpSwitch.setEnabled(false);
                 switch (viewID){
@@ -342,6 +376,7 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
                 }
                 break;
             }
+            //while recording, the only thing we can do is stop the recording
             case MODE_RECORD:{
                 switch (viewID){
                     case R.id.b_record: {
@@ -367,6 +402,11 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
      * This method should not to be called until the camera preview size is determined in
      * openCamera, or until the size of `mTextureView` is fixed.
      *
+     * This method was implemented when I still tried to support video capturing in landscape
+     * and portrait mode. I decided late into the development to only allow landscape mode, which is
+     * why this method is way more complicated than it needs to be. But I will leave it like that,
+     * since no problems have arisen from it.
+     *
      * @param viewWidth  The width of `mTextureView`
      * @param viewHeight The height of `mTextureView`
      */
@@ -379,19 +419,14 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
             return;
         }
 
-        /* we need to differentiate between camera modes in this transform:
-            because in MODE_FUSE the preview goes through a renderscript first and
-            somehow the output Surface does not have the same orientation as the direct camera output
-         */
-
-
+        //get the current rotation of the phone screen
         int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 
+        //scale and rotate the frames to the preview screen
         Matrix matrix = new Matrix();
-
         RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
 
-        //in the following declaration the width and height is switched to account for weird renderscript behaviour :S
+        //in the following line the width and height is switched to account for weird renderscript behaviour
         RectF bufferRect = new RectF(0, 0, mPreviewSize.getWidth(), mPreviewSize.getHeight());
 
         float centerX = viewRect.centerX();
@@ -409,7 +444,6 @@ public class VideoHdrFragment extends Fragment implements View.OnClickListener, 
         } else if (Surface.ROTATION_270 == rotation) {
             matrix.postRotate(180, centerX, centerY);
         }
-
 
         mTextureView.setTransform(matrix);
     }

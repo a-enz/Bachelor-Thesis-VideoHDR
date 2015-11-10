@@ -12,7 +12,9 @@ import videohdr.camera.ExposureMeter;
 import videohdr.camera.HdrCamera;
 
 /**
- * Created by andi on 12.09.2015.
+ * Class to influence capture settings while the camera is in the
+ * Overexposed mode
+ * Created by Andreas Enz on 12.09.2015.
  */
 public class OverExpCaptureSession extends SimpleCaptureSession{
     private static final String TAG = "OECapSess";

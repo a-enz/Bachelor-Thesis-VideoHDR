@@ -9,7 +9,12 @@ import android.view.View;
 
 /**
  * More or less copy pasted from GoogleSamples 'Camera2Video' and 'Camera2Basic'
- * Created by andi on 13.07.2015.
+ * (https://github.com/googlesamples/android-Camera2Basic,
+ * https://github.com/googlesamples/android-Camera2Video)
+ *
+ * This class is used to adjust the preview texture to phone screen and the aspect ration
+ * of the captured video frames.
+ * Created by Andreas Enz on 13.07.2015.
  */
 public class AutoFitTextureView extends TextureView{
 

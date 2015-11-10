@@ -11,11 +11,12 @@ import android.util.Size;
 import android.view.Surface;
 
 /**
- * Mostly copied from HdrViewfinders ViewfinderProcessor class
- * Combined with a renderscript we fuse a double exposure into a single frame
+ * Mostly copied from HdrViewfinders (https://github.com/googlesamples/android-HdrViewfinder)
+ * ViewfinderProcessor class. Combined with a renderscript we fuse a double exposure into a single frame
  * The renderscript tied to this class is called "preview_fuse.rs" and can be found in
  * ...\app\src\main\rs\
- * Created by andi on 13.07.2015.
+ *
+ * Created by Andreas Enz on 13.07.2015.
  */
 public class PreviewFuseProcessor {
 
@@ -37,6 +38,7 @@ public class PreviewFuseProcessor {
         int width = previewSize.getWidth();
         int height = previewSize.getHeight();
 
+        //set up input allocation
         Type.Builder yuvTypeBuilder = new Type.Builder(rs, Element.YUV(rs));
         yuvTypeBuilder.setX(width);
         yuvTypeBuilder.setY(height);
@@ -44,7 +46,7 @@ public class PreviewFuseProcessor {
         mInputAllocation = Allocation.createTyped(rs, yuvTypeBuilder.create(),
                 Allocation.USAGE_IO_INPUT | Allocation.USAGE_SCRIPT);
 
-
+        //set up output allocation
         Type.Builder rgbTypeBuilder = new Type.Builder(rs, Element.RGBA_8888(rs));
         rgbTypeBuilder.setX(width);
         rgbTypeBuilder.setY(height);
@@ -53,31 +55,49 @@ public class PreviewFuseProcessor {
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
                 Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
 
+        //processing thread for this processor
         mProcessingThread = new HandlerThread("PreviewFuseProcessor");
         mProcessingThread.start();
         mProcessingHandler = new Handler(mProcessingThread.getLooper());
 
+        //the custom script used to fuse two frames
         mFuseScript = new ScriptC_preview_fuse(rs);
 
+        //the fuse script needs a previous frame to fuse it with a current frame
+        //this is the initialization
         mFuseScript.set_gPrevFrame(mPrevAllocation);
 
         mFuseTask = new ProcessingTask(mInputAllocation);
     }
 
+    /**
+     * This surface object is used to provide camera output to this processor.
+     * @return the input surface to this processor
+     */
     public Surface getInputSurface() {
         return mInputAllocation.getSurface();
     }
 
+    /**
+     * This surface object is used to propagate the output of this processor
+     * further.
+     * @param output the output surface of this processor
+     */
     public void setOutputSurface(Surface output) {
         mOutputAllocation.setSurface(output);
     }
 
+    /**
+     * Stop the PreviewFuseProcessor by destroying input and output surface and quitting
+     * the processing thread.
+     */
     public void stop(){
 
         mInputAllocation.destroy();
         mOutputAllocation.destroy();
         mProcessingThread.quit();
     }
+
     /**
      * Simple class to keep track of incoming frame count,
      * and to process the newest one in the processing thread
@@ -112,7 +132,6 @@ public class PreviewFuseProcessor {
                 mPendingFrames = 0;
 
                 // Discard extra messages in case processing is slower than frame rate
-                //TODO this should be avoided because it may mess up parity of dark/bright frames
                 mProcessingHandler.removeCallbacks(this);
             }
 
@@ -128,7 +147,7 @@ public class PreviewFuseProcessor {
 
             // Run processing pass
             mFuseScript.forEach_fuseFrames(mPrevAllocation, mOutputAllocation);
-            mOutputAllocation.ioSend();
+            mOutputAllocation.ioSend(); //send to output surface
         }
     }
 

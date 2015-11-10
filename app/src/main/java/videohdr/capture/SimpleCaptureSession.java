@@ -15,7 +15,12 @@ import videohdr.camera.ExposureMeter;
 import videohdr.camera.HdrCamera;
 
 /**
- * Created by andi on 12.09.2015.
+ * This class was created to abstract and simplify the android API for this applications
+ * purposes as much as possible. Setting capture values in the new camera2 API of android can
+ * be quite a lengthy and cumbersome process, which I tried to wrap in this class.
+ * Other classes only have to deal with with ISO and exposure time values for the camera
+ * settings
+ * Created by Andreas Enz on 12.09.2015.
  */
 
 public abstract class SimpleCaptureSession implements ExposureMeter.EventListener {
@@ -26,9 +31,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
     a new AlternatingCaptureSession as well */
     protected CameraCaptureSession mCaptureSession;
 
-    /*builder for the camera device we are using for the alternating session preview
-      or the record request, depending on how the AlternatingCaptureSession was created (isRecording)
-     */
+    /*builder for the camera device we are using for the alternating session preview*/
     protected CaptureRequest.Builder mRequestBuilder;
 
     //consumer surfaces of this alternating session
@@ -59,7 +62,6 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
                     }
 
                     //set auto exposure mode to off, otherwise we can't do manual double exposure
-                    //TODO maybe more settings here are needed for the whole session
                     mRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
                     mRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, ExposureMeter.FRAME_DURATION);
                     mRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
@@ -87,8 +89,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
 
 
     /**
-     * CaptureCallback. What happens with captured results. Only the Meta Info of sensor capture contained
-     * in CaptureResult objects is accessible.
+     * Here meta information of the completed frames can be accessed, not used for now
      */
     protected final CameraCaptureSession.CaptureCallback mCaptureCallback =
             new CameraCaptureSession.CaptureCallback() {
@@ -107,7 +108,6 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
                 @Override
                 public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    //TODO here we could access meta information of the frames of TotalCaptureResult
                 }
 
                 /*
@@ -132,6 +132,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
      * Creator of this class.
      * @param device hardware device we want to execute the capture requests on
      * @param consumers consumer surfaces of captured requests
+     * @param meter changes to ISO and exposure time are give through this object
      * @param cameraHandler background camera thread to handle the requests
      */
     public SimpleCaptureSession(HdrCamera device,
@@ -145,7 +146,7 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
         mCameraHandler = cameraHandler;
 
 
-        createSessionAndCaptureBuilder(); //TODO handle if (creation failed) returns false
+        createSessionAndCaptureBuilder();
     }
 
     /**
@@ -164,21 +165,19 @@ public abstract class SimpleCaptureSession implements ExposureMeter.EventListene
 
 
         try {
-            /*not quite sure if it is a good idea to separate requests for preview only and record */
-
             mRequestBuilder = mCamera.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
         } catch (CameraAccessException e) {
             Log.d(TAG, "FAILED createCaptureRequest");
             e.printStackTrace();
         }
 
-        return (mCaptureSession == null || mRequestBuilder == null);
+        //return false if the initialization failed
+        return !(mCaptureSession == null || mRequestBuilder == null);
     }
 
     /*for now only for the previewBuilder */
     /**
-     * Create and execute (enqueue) a capture request. These are the only request settings the should
-     * be modified during a session
+     * Create and execute (enqueue) a capture request.
      */
     protected abstract void setCaptureParameters(ExposureMeter.MeteringParam param);
 

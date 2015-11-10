@@ -5,6 +5,7 @@ package videohdr.recorder;
  * depending on the camera hardware and the (end-)consumer surfaces:
  * -MediaRecorder
  * -SurfaceTexture
+ * -Allocation
  */
 
 
@@ -16,17 +17,19 @@ import android.util.Size;
 import java.util.Comparator;
 
 /**
- * Created by andi on 14.07.2015.
+ * Created by Andreas Enz on 14.07.2015.
  *
  * Should be used by the Camera and MediaRecorder to configure:
  * - Preview Size
  * - Video Size
+ * - Histogram Size
  */
 public class VideoSizeConfiguration {
 
     private static final String TAG = "VideoSizeConfiguration";
 
     private static final float ASPECT_RATIO = 3.f / 4.f;
+    //a different aspect ration is used for the recorded video
     private static final float ASPECT_RATIO_RECORD = 9.f / 16.f;
     private static final int MAX_RECORDING_WIDTH = 2500;
     private static final int MAX_PREVIEW_WIDTH = 1000;
@@ -87,21 +90,5 @@ public class VideoSizeConfiguration {
         }
         Log.e(TAG, "Couldn't find any suitable metering size. \n Returned value: " + choices[choices.length - 1]);
         return choices[choices.length - 1];
-    }
-
-    /* UTIL */
-
-    /**
-     * Compares two {@code Size}s based on their areas.
-     */
-    private static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
     }
 }

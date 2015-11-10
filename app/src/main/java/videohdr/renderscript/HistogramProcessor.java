@@ -12,7 +12,7 @@ import android.util.Size;
 import android.view.Surface;
 
 /**
- * Created by andi on 13.07.2015.
+ * Created by Andreas Enz on 13.07.2015.
  *
  * Together with a RenderScript we generate a Histogram of every captured frame.
  * The Histogram consists of one array of length 256 and measures the occurrence of different
@@ -43,10 +43,10 @@ public class HistogramProcessor {
      * HistogramListener
      */
     private EventListener mHistogramListener = null;
-    /**
-     * Script we use
-     */
 
+    /**
+     * Script we use. It is part of the android API and not specifically written for this application
+     */
     private final ScriptIntrinsicHistogram mHistogramScript;
 
 
@@ -88,6 +88,11 @@ public class HistogramProcessor {
 
     }
 
+    /**
+     * Get the surface that can be used to feed this Processor camera frames
+     * on which a histogram has to be computed
+     * @return input surface object for this Processor
+     */
     public Surface getInputSurface(){
         return inputImageAllocation.getSurface();
     }
@@ -99,7 +104,6 @@ public class HistogramProcessor {
      */
     class ProcessingTask implements Runnable, Allocation.OnBufferAvailableListener {
         private int mPendingFrames = 0;
-        private int mFrameCounter = 0;
 
         private Allocation mInputAllocation;
 
@@ -136,12 +140,13 @@ public class HistogramProcessor {
 
 
 
-            //processing pass
+            //processing pass and copy the result from the allocation
             mHistogramScript.forEach(mInputAllocation);
             outputHistogramAllocation.copyTo(frameHist);
 
-            //copy to int[] //
-            if (/*mFrameCounter++ % 15 == 0 && */mHistogramListener != null) mHistogramListener.onHistogramAvailable(frameHist);
+            //provide the resulting histogram to the listener if available
+            if (mHistogramListener != null)
+                mHistogramListener.onHistogramAvailable(frameHist);
 
 
         }
