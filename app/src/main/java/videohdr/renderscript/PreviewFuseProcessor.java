@@ -22,6 +22,26 @@ public class PreviewFuseProcessor {
 
     private static final String TAG = "PreviewFuseProcessor";
 
+    //weights will be computed as fractional parts of 10^5
+    int[] weights = {25406,25675,25945,26215,26486,26758,27030,27303,27576,27850,28124,28399,28673,
+            28948,29224,29499,29775,30050,30326,30602,30877,31153,31428,31704,31979,32253,32528,
+            32802,33075,33348,33621,33893,34164,34435,34705,34974,35243,35510,35777,36042,36307,
+            36570,36833,37094,37354,37613,37870,38126,38380,38633,38885,39135,39383,39629,39874,
+            40117,40358,40597,40835,41070,41303,41534,41763,41990,42214,42436,42656,42873,43088,
+            43301,43511,43718,43922,44124,44324,44520,44714,44904,45092,45277,45459,45638,45813,
+            45986,46155,46322,46485,46644,46801,46954,47103,47250,47392,47532,47667,47799,47928,
+            48053,48174,48292,48406,48516,48622,48725,48823,48918,49009,49097,49180,49259,49335,
+            49406,49473,49537,49596,49652,49703,49750,49793,49832,49867,49898,49925,49948,49966,
+            49981,49991,49997,50000,49997,49991,49981,49966,49948,49925,49898,49867,49832,49793,
+            49750,49703,49652,49596,49537,49473,49406,49335,49259,49180,49097,49009,48918,48823,
+            48725,48622,48516,48406,48292,48174,48053,47928,47799,47667,47532,47392,47250,47103,
+            46954,46801,46644,46485,46322,46155,45986,45813,45638,45459,45277,45092,44904,44714,
+            44520,44324,44124,43922,43718,43511,43301,43088,42873,42656,42436,42214,41990,41763,
+            41534,41303,41070,40835,40597,40358,40117,39874,39629,39383,39135,38885,38633,38380,
+            38126,37870,37613,37354,37094,36833,36570,36307,36042,35777,35510,35243,34974,34705,
+            34435,34164,33893,33621,33348,33075,32802,32528,32253,31979,31704,31428,31153,30877,
+            30602,30326,30050,29775,29499,29224,28948,28673,28399,28124,27850,27576,27303,27030,
+            26758,26486,26215,25945,25675};
 
     private Allocation mInputAllocation;
     private Allocation mPrevAllocation;
@@ -55,6 +75,11 @@ public class PreviewFuseProcessor {
         mOutputAllocation = Allocation.createTyped(rs, rgbTypeBuilder.create(),
                 Allocation.USAGE_IO_OUTPUT | Allocation.USAGE_SCRIPT);
 
+        //provide weights array to script
+        Allocation w = Allocation.createSized(rs, Element.I32(rs), weights.length);
+        w.copyFrom(weights);
+
+
         //processing thread for this processor
         mProcessingThread = new HandlerThread("PreviewFuseProcessor");
         mProcessingThread.start();
@@ -66,6 +91,7 @@ public class PreviewFuseProcessor {
         //the fuse script needs a previous frame to fuse it with a current frame
         //this is the initialization
         mFuseScript.set_gPrevFrame(mPrevAllocation);
+        mFuseScript.bind_weights(w);
 
         mFuseTask = new ProcessingTask(mInputAllocation);
     }
