@@ -16,10 +16,10 @@ import android.view.Surface;
 import java.util.Arrays;
 import java.util.List;
 
-import videohdr.capture.AlternatingCaptureSession;
-import videohdr.capture.OverExpCaptureSession;
-import videohdr.capture.SimpleCaptureSession;
-import videohdr.capture.UnderExpCaptureSession;
+import videohdr.camera.capture.AlternatingCaptureSession;
+import videohdr.camera.capture.OverExpCaptureSession;
+import videohdr.camera.capture.SimpleCaptureSession;
+import videohdr.camera.capture.UnderExpCaptureSession;
 import videohdr.renderscript.PreviewFuseProcessor;
 import videohdr.view.AutoFitTextureView;
 import videohdr.recorder.VideoRecorder;
@@ -219,7 +219,6 @@ public class HdrCamera {
         } catch (CameraAccessException e){
             Log.d(TAG, "accessing the camera failed");
         }
-        //TODO error dialog in case no camera was found
         return false;
     }
 
@@ -248,7 +247,6 @@ public class HdrCamera {
                     mManager.openCamera(mCameraID, mCameraStateCallback, mCameraHandler);
                 } catch (CameraAccessException e) {
                     e.printStackTrace();
-                    //TODO error handling
                 }
             }
         });
@@ -425,7 +423,6 @@ public class HdrCamera {
         * used MediaRecorder into the Initialize state, which means no output surface is available.
         * This also means the whole camera surface connection is reset and needs to be built again.
         * essentially we need to do the whole thing that is done when opening the camera*/
-        //TODO restart preview in a better way
         mCaptureSession.close(); //stop camera outputs
         mPreviewFuseProcessor.stop(); //no longer fuse
         mExposureMeter.destroyHistogramProcessor();
