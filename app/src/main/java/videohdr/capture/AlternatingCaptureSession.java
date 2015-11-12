@@ -66,7 +66,7 @@ public class AlternatingCaptureSession extends SimpleCaptureSession {
         mDoubleExposure.set(1, mRequestBuilder.build());
 
         try {
-            Log.d(TAG, "trying to change parameters for alternating capture session");
+            //Log.d(TAG, "trying to change parameters for alternating capture session");
             /* starting a repeating burst (in this specific class consisting of two exposures repeated
             until a new capture request is provided*/
             mCaptureSession.setRepeatingBurst(mDoubleExposure, mCaptureCallback, mCameraHandler);

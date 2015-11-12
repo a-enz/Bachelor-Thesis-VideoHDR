@@ -195,7 +195,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
             //Either this:  influence underexp values ...
             if(isUnderExposedFrame) {
-                Log.d(TAG, "This frame is: UNDER exposed. Mean brightness: " + mean_brightness);
+                //Log.d(TAG, "This frame is: UNDER exposed. Mean brightness: " + mean_brightness);
 
                 int overExpAmount = 0;
                 int betterExpAmount = 0;
@@ -238,7 +238,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
 
             //..OR this: influence overexp values
             if(isOverExposedFrame) {
-                Log.d(TAG, "This frame is: OVER exposed. Mean brightness: " + mean_brightness);
+                //Log.d(TAG, "This frame is: OVER exposed. Mean brightness: " + mean_brightness);
 
                 int underExpAmount = 0;
                 int betterExpAmount = 0;
@@ -284,7 +284,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
             * since the camera changes the capture values only after a burst (in this case consisting
             * of 2 frames, is finished) */
             if(histogramTAG % 2 == 0 && (paramsChanged || prev_paramsChanged)) {
-                Log.d(TAG, "new capture values: " + currentMeteringParam.toString());
+                //Log.d(TAG, "new capture values: " + currentMeteringParam.toString());
                 mCaptureSession.onMeterEvent(currentMeteringParam);
             }
 
@@ -381,7 +381,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     }
 
     private boolean changeUnderExpParamAndSignalSuccess(double factor){
-        Log.d(TAG, "adjusting UNDER exp by factor " + factor);
+        //Log.d(TAG, "adjusting UNDER exp by factor " + factor);
         if(factor == 1) return false;
         long dur_o;
         long dur_u;
@@ -423,7 +423,7 @@ public class ExposureMeter implements HistogramProcessor.EventListener {
     }
 
     private boolean changeOverExpParamAndSignalSuccess(double factor){
-        Log.d(TAG, "adjusting OVER exp by factor " + factor);
+        //Log.d(TAG, "adjusting OVER exp by factor " + factor);
         if(factor == 1) return false;
         long dur_o;
         long dur_u;
